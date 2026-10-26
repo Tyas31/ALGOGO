@@ -99,7 +99,11 @@ export const Shadows = {
 } as const;
 
 export const Sizes = {
+<<<<<<< HEAD
   frameWidth: 360,
+=======
+  frameWidth: 380,
+>>>>>>> backup-algogo
   buttonWidth: 260,
   buttonHeight: 44,
   optionHeight: 60,

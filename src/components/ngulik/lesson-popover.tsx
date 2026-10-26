@@ -60,12 +60,23 @@ export function LessonPopover({
 
 const styles = StyleSheet.create({
   root: {
+<<<<<<< HEAD
     width: 300,
     maxWidth: '100%',
     paddingVertical: Spacing[3],
     paddingHorizontal: Spacing[4],
     borderRadius: Radius.sm,
     backgroundColor: Colors.primary,
+=======
+    width: 290,
+    maxWidth: '92%',
+    paddingVertical: Spacing[3] + 2,
+    paddingHorizontal: Spacing[4],
+    borderRadius: Radius.md,
+    backgroundColor: Colors.primary,
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.28)',
+    zIndex: 10000,
+>>>>>>> backup-algogo
   },
   arrow: {
     position: 'absolute',
@@ -82,10 +93,15 @@ const styles = StyleSheet.create({
   head: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+<<<<<<< HEAD
+=======
+    alignItems: 'center',
+>>>>>>> backup-algogo
     gap: Spacing[2],
   },
   title: {
     flex: 1,
+<<<<<<< HEAD
   },
   desc: {
     marginTop: 2,
@@ -93,12 +109,32 @@ const styles = StyleSheet.create({
   btn: {
     height: 24,
     marginTop: Spacing[2],
+=======
+    fontSize: 14,
+  },
+  desc: {
+    marginTop: 4,
+    opacity: 0.92,
+    lineHeight: 16,
+  },
+  btn: {
+    height: 34,
+    marginTop: Spacing[3],
+>>>>>>> backup-algogo
     borderRadius: Radius.full,
     backgroundColor: Colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
+<<<<<<< HEAD
   },
   pressed: {
     opacity: 0.85,
+=======
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
+  },
+  pressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+>>>>>>> backup-algogo
   },
 });
