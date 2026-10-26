@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react';
+<<<<<<< HEAD
 import { ScrollView, StyleSheet, View } from 'react-native';
+=======
+import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+>>>>>>> backup-algogo
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { Colors, Sizes, Spacing } from '@/constants/theme';
@@ -11,6 +15,7 @@ type ScreenProps = {
   /** Pinned below the content, e.g. the primary Button. */
   footer?: ReactNode;
   edges?: Edge[];
+<<<<<<< HEAD
 };
 
 /**
@@ -23,6 +28,31 @@ export function Screen({ children, header, footer, edges = ['top', 'bottom'] }: 
       <View style={styles.frame}>
         {header ? <View style={styles.header}>{header}</View> : null}
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+=======
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  frameStyle?: StyleProp<ViewStyle>;
+};
+
+/**
+ * Layar standar: latar `surface`, frame maksimal 360-400px, gutter `space-5`,
+ * tombol utama `space-8` dari bawah.
+ */
+export function Screen({
+  children,
+  header,
+  footer,
+  edges = ['top', 'bottom'],
+  contentContainerStyle,
+  frameStyle,
+}: ScreenProps) {
+  return (
+    <SafeAreaView style={styles.root} edges={edges}>
+      <View style={[styles.frame, frameStyle]}>
+        {header ? <View style={styles.header}>{header}</View> : null}
+        <ScrollView
+          contentContainerStyle={[styles.content, contentContainerStyle]}
+          showsVerticalScrollIndicator={false}>
+>>>>>>> backup-algogo
           {children}
         </ScrollView>
         {footer ? <View style={styles.footer}>{footer}</View> : null}
@@ -31,6 +61,10 @@ export function Screen({ children, header, footer, edges = ['top', 'bottom'] }: 
   );
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> backup-algogo
 const styles = StyleSheet.create({
   root: {
     flex: 1,
