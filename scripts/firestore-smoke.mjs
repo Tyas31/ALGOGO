@@ -7,10 +7,17 @@ import { loadService } from './load-typescript.mjs';
 // and Firestore share one Firebase registry during this Node-only smoke test.
 const require = createRequire(new URL('../package.json', import.meta.url));
 const { initializeApp, deleteApp } = require('firebase/app');
-const { getAuth, createUserWithEmailAndPassword, updateProfile, deleteUser } = require('firebase/auth');
+const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, deleteUser } = require('firebase/auth');
 const { collection, doc, getDoc, getDocs, getFirestore, updateDoc, serverTimestamp, writeBatch } = require('firebase/firestore');
 
-process.loadEnvFile(new URL('../.env.local', import.meta.url));
+// Node preserves existing values: optional local overrides load before the shared
+// defaults, matching Expo's priority without requiring a private file after clone.
+try {
+  process.loadEnvFile(new URL('../.env.local', import.meta.url));
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
+process.loadEnvFile(new URL('../.env', import.meta.url));
 const config = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
@@ -22,7 +29,17 @@ const auth = getAuth(app);
 let user;
 
 try {
-  user = (await createUserWithEmailAndPassword(auth, `algogo-regression-${randomBytes(6).toString('hex')}@example.test`, randomBytes(24).toString('base64url'))).user;
+  const email = `algogo-regression-${randomBytes(6).toString('hex')}@example.test`;
+  const password = randomBytes(24).toString('base64url');
+  user = (await createUserWithEmailAndPassword(auth, email, password)).user;
+  const loginApp = initializeApp(config, 'login-regression');
+  try {
+    const login = await signInWithEmailAndPassword(getAuth(loginApp), email, password);
+    assert.equal(login.user.uid, user.uid);
+    console.log('PASS registration and a separate login session use the same Firebase account.');
+  } finally {
+    await deleteApp(loginApp);
+  }
   await updateProfile(user, { displayName: 'Uji Regresi' });
   const service = loadService('services/firestore');
   const { progressPath } = loadService('lib/progress-state');

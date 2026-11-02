@@ -9,9 +9,9 @@ Firebase Authentication, dan Cloud Firestore.
 npm ci
 ```
 
-Siapkan `.env.local` dari `.env.example` menggunakan konfigurasi aplikasi Web
-Firebase. File lokal pada komputer pengembangan sudah dikonfigurasi untuk
-`algogo-af45b` dan diabaikan Git.
+Konfigurasi Firebase Web untuk proyek bersama `algogo-af45b` tersedia dalam `.env`
+yang ikut Git. Setelah clone atau pull, tidak perlu membuat `.env.local` atau
+meminta akses Firebase Console untuk mencoba login dan mendaftar.
 
 ```powershell
 npx expo start
@@ -19,6 +19,19 @@ npx expo start
 
 Buka aplikasi dengan Expo Go atau web, lalu daftar menggunakan email dan kata sandi.
 Materi, progres, dan hasil latihan memerlukan koneksi internet.
+
+Jika Expo sudah berjalan sebelum pull, hentikan dengan `Ctrl+C`, lalu jalankan
+`npx expo start --go --clear` dan muat ulang aplikasi. Untuk web, gunakan alamat
+yang ditampilkan terminal (biasanya `http://localhost:8081`).
+
+Jika masih muncul **Layanan akun belum tersedia**, periksa `.env.local` lama:
+nilai kosong di file tersebut menimpa `.env`. Hapus file lokal yang hanya berisi
+template kosong agar konfigurasi bersama digunakan. Jika ingin memakai proyek
+Firebase berbeda, gunakan `.env.example` sebagai panduan lalu isi keenam nilai
+di `.env.local`; file lokal tetap diabaikan Git.
+
+`.env` hanya berisi identitas publik aplikasi Firebase. Akses akun dan data
+tetap diperiksa oleh Firebase Authentication dan Security Rules.
 
 ## Pemeriksaan
 
@@ -33,7 +46,7 @@ npm test
 [Panduan Firestore](docs/FIRESTORE.md) menjelaskan struktur data, pemetaan dump SQL,
 pengaturan Firebase, aturan XP/streak, batas penilaian di klien, dan pengelolaan aturan akses.
 
-- Konfigurasi aplikasi: `.env.local` dan `src/lib/firebase.ts`.
+- Konfigurasi aplikasi bersama: `.env` dan `src/lib/firebase.ts`; override opsional: `.env.local`.
 - Integrasi data: `src/services/firestore.ts`.
 - Aturan database: `firestore.rules`.
 - Sumber materi: `Materi-Soal-Algogo.md`, dengan 8 level, 35 slide, dan 50 soal.

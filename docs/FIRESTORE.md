@@ -7,12 +7,23 @@ lokasi `asia-southeast2` (Jakarta), paket Spark. Aplikasi Web terdaftar sebagai
 ## Menjalankan aplikasi
 
 1. Pasang dependensi dengan `npm ci`.
-2. Salin `.env.example` menjadi `.env.local` dan isi konfigurasi aplikasi Web dari
-   Firebase Console. Pada komputer yang dipakai menyiapkan proyek ini, `.env.local`
-   sudah diisi dan diabaikan Git.
+2. Konfigurasi Firebase Web proyek bersama sudah tersedia dalam `.env` yang ikut Git.
+   Tidak perlu membuat `.env.local` untuk mencoba aplikasi setelah clone/pull.
 3. Jalankan `npx expo start`, lalu buka melalui Expo Go atau web.
 4. Pilih **Belum punya akun? Daftar**. Nama tampilan, email, dan kata sandi diperlukan.
    Kata sandi dikelola Firebase Authentication dan tidak disimpan di Firestore.
+
+Expo memuat `.env` secara otomatis. `.env.local` tetap diabaikan Git dan dapat
+menimpa nilainya jika pengembang ingin memakai proyek Firebase berbeda. Gunakan
+`.env.example` sebagai panduan untuk override dan isi semua enam field dari satu
+aplikasi Web Firebase yang sama. Jangan mengisi override dengan nilai kosong.
+Jika pernah menyalin template kosong menjadi `.env.local`, hapus file kosong
+tersebut agar konfigurasi proyek bersama terbaca.
+
+Setelah pull perubahan konfigurasi, hentikan server Expo yang lama dengan
+`Ctrl+C`, jalankan `npx expo start --go --clear`, lalu muat ulang web/Expo Go.
+Setiap pengembang terhubung ke backend bersama yang sama melalui internet;
+localhost hanya menjalankan aplikasi di komputernya masing-masing.
 
 Jika `npm`/`npx` tidak dikenali di terminal komputer ini, launcher npm sementara
 yang disiapkan saat integrasi dapat dipakai dari folder ALGOGO:
@@ -94,7 +105,8 @@ memvalidasi struktur/nilai hasil dan perubahan XP, tetapi tidak membuktikan jawa
 benar secara independen. Untuk ujian atau kompetisi yang membutuhkan penilaian
 tepercaya, pindahkan kunci jawaban dan penilaian ke server sebelum penggunaan tersebut.
 
-Konfigurasi `EXPO_PUBLIC_FIREBASE_*` adalah konfigurasi klien yang masuk ke bundel.
+Konfigurasi `EXPO_PUBLIC_FIREBASE_*` dalam `.env` adalah konfigurasi klien publik
+yang ikut Git dan masuk ke bundel.
 Kendali akses ada pada Authentication dan Security Rules. Jangan memasukkan private
 key Admin SDK ke aplikasi atau ke variabel `EXPO_PUBLIC_*`.
 
@@ -118,7 +130,8 @@ npm test
 npx expo export --platform android --output-dir .expo/verify-android
 ```
 
-`npm run test:firestore` menjalankan regresi langsung ke proyek Firebase memakai
+`npm run test:firestore` membaca `.env` bersama (dengan override `.env.local` opsional)
+dan menguji pendaftaran serta login, lalu menjalankan regresi langsung ke Firebase memakai
 akun sementara, lalu membersihkan akun dan data milik akun uji itu. Pengujian
 mencakup pembukaan satu node, perbedaan soal per level, percobaan bersamaan,
 serta batas ujian 10/15 dan 11/15. Tidak mengubah progres pengguna lain.
