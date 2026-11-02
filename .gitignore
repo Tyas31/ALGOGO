@@ -44,3 +44,6 @@ example
 
 # Generated from src/data/curriculum.ts
 /firebase/curriculum.json
+
+# Claude Code
+.claude/
