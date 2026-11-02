@@ -18,10 +18,10 @@ export function LoadingScreen({ duration }: { duration: number }) {
   const fillStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
   return (
-    <View style={styles.root} accessibilityLabel="Memuat Ngulik!" accessibilityRole="progressbar">
+    <View style={styles.root} accessibilityLabel="Memuat AlgoGo!" accessibilityRole="progressbar">
       <ArtImage art={Mascots.wave} height={180} />
       <Text variant="display" style={styles.brand}>
-        Ngulik!
+        AlgoGo!
       </Text>
       <View style={styles.track}>
         <Animated.View style={[styles.fill, fillStyle]} />

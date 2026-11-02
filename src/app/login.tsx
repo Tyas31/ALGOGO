@@ -35,7 +35,7 @@ export default function LoginScreen() {
         </View>
         <View style={styles.heading}>
           <Text variant="display" style={styles.center}>
-            Selamat Datang di Ngulik!
+            Selamat Datang di AlgoGo!
           </Text>
           <Text color="inkSoft" style={styles.center}>
             Masuk dulu yuk, biar streak dan XP kamu tersimpan.

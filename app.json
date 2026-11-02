@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ALGOGO",
-    "slug": "ALGOGO",
+    "name": "AlgoGo",
+    "slug": "algogo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

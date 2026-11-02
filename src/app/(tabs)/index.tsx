@@ -486,22 +486,26 @@ export default function HomeScreen() {
   return (
     <Screen
       frameStyle={styles.screenFrame}
+      headerStyle={styles.fixedHeader}
+      header={
+        <>
+          {/* 1. Bar Atas: Streak Badge */}
+          <View style={styles.topBar}>
+            <StreakBadge days={streakDays} />
+          </View>
+
+          {/* 2. Banner Level 1 di atas jalur */}
+          <View>
+            <LevelBanner
+              level={currentLevel?.id ?? 1}
+              eyebrow={`LEVEL ${currentLevel?.id ?? 1}`}
+              title="Mengenal Algoritma"
+              art={Mascots.wave}
+            />
+          </View>
+        </>
+      }
       contentContainerStyle={styles.scrollContent}>
-      {/* 1. Bar Atas: Streak Badge */}
-      <View style={styles.topBar}>
-        <StreakBadge days={streakDays} />
-      </View>
-
-      {/* 2. Banner Level 1 di atas jalur */}
-      <View style={styles.bannerContainer}>
-        <LevelBanner
-          level={currentLevel?.id ?? 1}
-          eyebrow={`LEVEL ${currentLevel?.id ?? 1}`}
-          title="Mengenal Algoritma"
-          art={Mascots.wave}
-        />
-      </View>
-
       {/* Pesan saat mengetuk node terkunci */}
       {lockedNotice ? (
         <View style={styles.noticeToast}>
@@ -637,18 +641,20 @@ const styles = StyleSheet.create({
   screenFrame: {
     paddingHorizontal: 0,
   },
-  scrollContent: {
+  fixedHeader: {
     paddingHorizontal: Spacing[4],
     paddingTop: Spacing[2],
+    paddingBottom: Spacing[4],
+    gap: Spacing[4],
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing[4],
     paddingBottom: Spacing[8] + 40,
     gap: Spacing[4],
   },
   topBar: {
     paddingHorizontal: Spacing[1],
     paddingBottom: Spacing[1],
-  },
-  bannerContainer: {
-    marginBottom: Spacing[2],
   },
   noticeToast: {
     backgroundColor: Colors.inkSoft,
