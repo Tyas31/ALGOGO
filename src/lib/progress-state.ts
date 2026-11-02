@@ -1,0 +1,70 @@
+export type ProgressState = {
+  xp: number;
+  streakDays: number;
+  longestStreak: number;
+  lastStudyDay: number | null;
+  completedLevels: number[];
+};
+
+export const LEVEL_XP = [50, 50, 50, 50, 50, 50, 50, 150] as const;
+export const LEVEL_QUESTION_COUNTS = [5, 5, 5, 5, 5, 5, 5, 15] as const;
+export const EXAM_PASSING_CORRECT_COUNT = 11;
+export type QuizScore = { correctCount: number; totalQuestions: number };
+const DAY_MS = 86_400_000;
+
+// A study day uses Asia/Jakarta (UTC+7) consistently across devices.
+export function studyDay(now: Date = new Date()) {
+  return Math.floor((now.getTime() + 7 * 60 * 60 * 1000) / DAY_MS);
+}
+
+export function initialProgress(): ProgressState {
+  return { xp: 0, streakDays: 0, longestStreak: 0, lastStudyDay: null, completedLevels: [] };
+}
+
+export function visibleStreak(state: ProgressState, now: Date = new Date()) {
+  return state.lastStudyDay !== null && studyDay(now) - state.lastStudyDay <= 1
+    ? state.streakDays : 0;
+}
+
+export function finishLevel(state: ProgressState, levelId: number, score: QuizScore, now: Date = new Date()) {
+  if (!Number.isInteger(levelId) || levelId < 1 || levelId > LEVEL_XP.length) {
+    throw new Error('Level tidak ditemukan.');
+  }
+  if (levelId > 1 && !state.completedLevels.includes(levelId - 1)) {
+    throw new Error('Selesaikan level sebelumnya terlebih dahulu.');
+  }
+  if (score.totalQuestions !== LEVEL_QUESTION_COUNTS[levelId - 1] ||
+      !Number.isInteger(score.correctCount) || score.correctCount < 0 || score.correctCount > score.totalQuestions) {
+    throw new Error('Hasil latihan tidak valid. Muat ulang materi lalu coba lagi.');
+  }
+  const passed = levelId < LEVEL_XP.length || score.correctCount >= EXAM_PASSING_CORRECT_COUNT;
+  const alreadyCompleted = state.completedLevels.includes(levelId);
+  const xpAwarded = alreadyCompleted || !passed ? 0 : LEVEL_XP[levelId - 1];
+  const completedLevels = alreadyCompleted || !passed
+    ? [...state.completedLevels] : [...state.completedLevels, levelId].sort((a, b) => a - b);
+  const today = studyDay(now);
+  if (state.lastStudyDay !== null && today < state.lastStudyDay) {
+    throw new Error('Tanggal perangkat lebih awal dari aktivitas terakhir. Periksa tanggal perangkat.');
+  }
+  const streakDays = state.lastStudyDay === today ? state.streakDays
+    : state.lastStudyDay === today - 1 ? state.streakDays + 1 : 1;
+  const next: ProgressState = {
+    xp: completedLevels.reduce((sum, id) => sum + LEVEL_XP[id - 1], 0),
+    streakDays,
+    longestStreak: Math.max(state.longestStreak, streakDays),
+    lastStudyDay: today,
+    completedLevels,
+  };
+  return { next, xpAwarded, passed };
+}
+
+export function progressPath(completedLevels: number[]) {
+  const currentLevelId = Math.min(completedLevels.length + 1, LEVEL_XP.length);
+  const completedStepNodes = [...completedLevels];
+  return {
+    currentLevelId,
+    currentStepNodeId: completedLevels.length === LEVEL_XP.length ? LEVEL_XP.length + 1 : currentLevelId,
+    completedStepNodes,
+    unlockedLevels: Array.from({ length: currentLevelId }, (_, index) => index + 1),
+  };
+}

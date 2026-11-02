@@ -24,32 +24,9 @@ const catAvatars = [
   require('@/assets/ngulik/peringkat/cat-10.png'),
 ];
 
-type LeaderboardRow = {
-  rank: number;
-  name: string;
-  xp: number;
-  isCurrentUser?: boolean;
-};
-
-const LEADERBOARD_DATA: LeaderboardRow[] = [
-  { rank: 1, name: 'tias', xp: 100 },
-  { rank: 2, name: 'naell', xp: 50, isCurrentUser: true },
-  { rank: 3, name: 'dewa', xp: 20 },
-  { rank: 4, name: 'faisal', xp: 10 },
-  { rank: 5, name: 'siti', xp: 10 },
-  { rank: 6, name: 'ahmad', xp: 10 },
-  { rank: 7, name: 'gusti', xp: 10 },
-  { rank: 8, name: 'agus', xp: 10 },
-  { rank: 9, name: 'ningsih', xp: 10 },
-  { rank: 10, name: 'zahra', xp: 10 },
-];
-
 export default function RankScreen() {
   const insets = useSafeAreaInsets();
-  const { rank } = useProgress();
-
-  // Peringkat pengguna minggu lalu (default #2 sesuai desain UI/UX)
-  const previousWeekRank = rank > 0 ? rank : 2;
+  const { rank, leaderboard, leaderboardError, retry } = useProgress();
 
   return (
     <View style={styles.root}>
@@ -73,19 +50,21 @@ export default function RankScreen() {
           {/* 2. Teks Info Peringkat Minggu Lalu */}
           <View style={styles.summaryTextWrapper}>
             <Text variant="headline" color="onPrimary" style={styles.summaryText}>
-              Kamu meraih peringkat #{previousWeekRank} minggu lalu
+              {rank ? `Peringkat kamu saat ini #${rank}` : 'Peringkat Belajar'}
             </Text>
           </View>
 
           {/* 3. Kartu Putih Daftar 10 Besar */}
           <View style={styles.cardContainer}>
             <View style={styles.leaderboardCard}>
-              {LEADERBOARD_DATA.map((user, index) => {
+              {leaderboardError && <Text accessibilityRole="alert" color="danger" onPress={retry}>{leaderboardError} Ketuk untuk mencoba lagi.</Text>}
+              {!leaderboardError && leaderboard.length === 0 && <Text>Belum ada peringkat. Ayo mulai belajar!</Text>}
+              {leaderboard.map((user, index) => {
                 const avatarSource = catAvatars[index] ?? catAvatars[0];
 
                 return (
                   <View
-                    key={user.rank}
+                    key={user.uid}
                     style={[
                       styles.userRow,
                       user.isCurrentUser && styles.userRowHighlight,

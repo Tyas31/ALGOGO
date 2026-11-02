@@ -1,56 +1,43 @@
-# Welcome to your Expo app 👋
+# ALGOGO
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplikasi belajar algoritma dan Python dengan Expo SDK 57, Expo Router,
+Firebase Authentication, dan Cloud Firestore.
 
-## Get started
+## Mulai
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```powershell
+npm ci
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Siapkan `.env.local` dari `.env.example` menggunakan konfigurasi aplikasi Web
+Firebase. File lokal pada komputer pengembangan sudah dikonfigurasi untuk
+`algogo-af45b` dan diabaikan Git.
 
-### Other setup steps
+```powershell
+npx expo start
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Buka aplikasi dengan Expo Go atau web, lalu daftar menggunakan email dan kata sandi.
+Materi, progres, dan hasil latihan memerlukan koneksi internet.
 
-## Learn more
+## Pemeriksaan
 
-To learn more about developing your project with Expo, look at the following resources:
+```powershell
+npx expo lint
+npx tsc --noEmit
+npm test
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Backend
 
-## Join the community
+[Panduan Firestore](docs/FIRESTORE.md) menjelaskan struktur data, pemetaan dump SQL,
+pengaturan Firebase, aturan XP/streak, batas penilaian di klien, dan pengelolaan aturan akses.
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Konfigurasi aplikasi: `.env.local` dan `src/lib/firebase.ts`.
+- Integrasi data: `src/services/firestore.ts`.
+- Aturan database: `firestore.rules`.
+- Sumber materi: `Materi-Soal-Algogo.md`, dengan 8 level, 35 slide, dan 50 soal.
+- Satu bintang mewakili satu level; hanya level berikutnya yang terbuka setelah kuis selesai.
+- Sinkronisasi sumber: `npm run curriculum:sync`.
+- Uji integrasi Firebase dengan akun sementara: `npm run test:firestore`.
+- Ekspor data awal: `npm run firebase:export`.

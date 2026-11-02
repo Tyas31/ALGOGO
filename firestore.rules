@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owner(uid) { return signedIn() && request.auth.uid == uid; }
+    function today() { return int((request.time.toMillis() + 25200000) / 86400000); }
+
+    function validLevels(levels) {
+      return levels is list && levels.size() <= 8 && levels.toSet().size() == levels.size()
+        && levels.hasOnly([1, 2, 3, 4, 5, 6, 7, 8])
+        && (!(2 in levels) || 1 in levels) && (!(3 in levels) || 2 in levels)
+        && (!(4 in levels) || 3 in levels) && (!(5 in levels) || 4 in levels)
+        && (!(6 in levels) || 5 in levels) && (!(7 in levels) || 6 in levels)
+        && (!(8 in levels) || 7 in levels);
+    }
+    function validProgress(data) {
+      return data.keys().hasAll(['xp', 'streakDays', 'longestStreak', 'lastStudyDay', 'completedLevels', 'updatedAt'])
+        && data.keys().hasOnly(['xp', 'streakDays', 'longestStreak', 'lastStudyDay', 'completedLevels', 'updatedAt'])
+        && validLevels(data.completedLevels)
+        && data.xp is int && data.xp == (data.completedLevels.size() == 8 ? 500 : data.completedLevels.size() * 50)
+        && data.streakDays is int && data.streakDays >= 0
+        && data.longestStreak is int && data.longestStreak >= data.streakDays
+        && (data.lastStudyDay == null || data.lastStudyDay is int)
+        && data.updatedAt == request.time;
+    }
+    function resetState(data) {
+      return data.xp == 0 && data.streakDays == 0 && data.longestStreak == 0
+        && data.lastStudyDay == null && data.completedLevels.size() == 0;
+    }
+    function nextStreak(old) {
+      return old.lastStudyDay == today() ? old.streakDays
+        : old.lastStudyDay == today() - 1 ? old.streakDays + 1 : 1;
+    }
+    function validCompletion(data, old) {
+      return data.completedLevels.toSet().hasAll(old.completedLevels)
+        && data.completedLevels.size() <= old.completedLevels.size() + 1
+        && data.lastStudyDay == today()
+        && (old.lastStudyDay == null || old.lastStudyDay <= today())
+        && data.streakDays == nextStreak(old)
+        && data.longestStreak == (old.longestStreak > nextStreak(old) ? old.longestStreak : nextStreak(old));
+    }
+
+    match /users/{uid} {
+      allow read, delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && request.resource.data.keys().hasAll(['displayName', 'email', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['displayName', 'email', 'createdAt', 'updatedAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1 && request.resource.data.displayName.size() <= 50
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.updatedAt == request.time
+        && ((!exists(/databases/$(database)/documents/users/$(uid)) && request.resource.data.createdAt == request.time)
+          || (exists(/databases/$(database)/documents/users/$(uid)) && request.resource.data.createdAt == resource.data.createdAt));
+
+      match /attempts/{attemptId} {
+        allow read, delete: if owner(uid);
+        allow create: if owner(uid)
+          && request.resource.data.keys().hasAll(['levelId', 'correctCount', 'totalQuestions', 'score', 'xpAwarded', 'passed', 'completedAt'])
+          && request.resource.data.keys().hasOnly(['levelId', 'correctCount', 'totalQuestions', 'score', 'xpAwarded', 'passed', 'completedAt'])
+          && request.resource.data.levelId is int
+          && request.resource.data.levelId >= 1 && request.resource.data.levelId <= 8
+          && request.resource.data.totalQuestions is int && request.resource.data.totalQuestions > 0
+          && request.resource.data.totalQuestions == get(/databases/$(database)/documents/levels/$(string(request.resource.data.levelId))).data.questionCount
+          && request.resource.data.correctCount is int && request.resource.data.correctCount >= 0
+          && request.resource.data.correctCount <= request.resource.data.totalQuestions
+          && request.resource.data.passed is bool
+          && request.resource.data.passed == (request.resource.data.levelId != 8 || request.resource.data.correctCount >= 11)
+          && (request.resource.data.passed
+            ? request.resource.data.levelId in getAfter(/databases/$(database)/documents/progress/$(uid)).data.completedLevels
+            : getAfter(/databases/$(database)/documents/progress/$(uid)).data.completedLevels == get(/databases/$(database)/documents/progress/$(uid)).data.completedLevels)
+          && request.resource.data.score == int(request.resource.data.correctCount * 100.0 / request.resource.data.totalQuestions + 0.5)
+          && request.resource.data.xpAwarded == getAfter(/databases/$(database)/documents/progress/$(uid)).data.xp - get(/databases/$(database)/documents/progress/$(uid)).data.xp
+          && request.resource.data.completedAt == request.time;
+        allow update: if false;
+      }
+    }
+
+    match /progress/{uid} {
+      allow read, delete: if owner(uid);
+      allow create: if owner(uid) && validProgress(request.resource.data) && resetState(request.resource.data);
+      allow update: if owner(uid) && validProgress(request.resource.data)
+        && (resetState(request.resource.data) || validCompletion(request.resource.data, resource.data));
+    }
+
+    // Only display names, handles and learning statistics are shared. Email stays in /users.
+    match /leaderboard/{uid} {
+      allow read: if signedIn();
+      allow delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && request.resource.data.keys().hasAll(['displayName', 'handle', 'xp', 'streakDays', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['displayName', 'handle', 'xp', 'streakDays', 'updatedAt'])
+        && request.resource.data.displayName == getAfter(/databases/$(database)/documents/users/$(uid)).data.displayName
+        && request.resource.data.handle is string && request.resource.data.handle.size() <= 50
+        && request.resource.data.xp == getAfter(/databases/$(database)/documents/progress/$(uid)).data.xp
+        && request.resource.data.streakDays == getAfter(/databases/$(database)/documents/progress/$(uid)).data.streakDays
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /levels/{levelId} {
+      allow read: if signedIn();
+      allow write: if false;
+      match /{content=**} {
+        allow read: if signedIn();
+        allow write: if false;
+      }
+    }
+  }
+}

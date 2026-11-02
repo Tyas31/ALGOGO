@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AnswerOption, AnswerOptionGroup } from '@/components/ngulik/answer-option';
 import { ArtImage } from '@/components/ngulik/art-image';
+import { DataState } from '@/components/data-state';
 import { Button } from '@/components/ngulik/button';
 import { FeedbackBanner } from '@/components/ngulik/feedback-banner';
 import { ProgressHeader } from '@/components/ngulik/progress-header';
@@ -13,19 +14,39 @@ import { Text } from '@/components/ngulik/text';
 import { TextField } from '@/components/ngulik/text-field';
 import { Icons, Mascots } from '@/constants/assets';
 import { Colors, Fonts, Radius, Shadows, Spacing } from '@/constants/theme';
-import { CURRICULUM, type QuestionData } from '@/data/curriculum';
+import type { LevelData, QuestionData } from '@/data/curriculum';
+import { useLevel } from '@/hooks/use-level';
 import { useProgress } from '@/hooks/use-progress';
+import { errorMessage } from '@/lib/errors';
+import { isCorrectAnswer } from '@/lib/quiz-answers';
+import { LEVEL_CATALOG } from '@/data/level-catalog';
 
 export default function QuizScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const levelId = parseInt(id ?? '1', 10);
-  const level = CURRICULUM.find((lvl) => lvl.id === levelId) ?? CURRICULUM[0];
-  const { completeLevel } = useProgress();
+  const levelId = Number(id);
+  const { level, error, retry } = useLevel(levelId);
+  const { unlockedLevels } = useProgress();
+  const [attemptNumber, setAttemptNumber] = useState(0);
+  if (!unlockedLevels.includes(levelId)) return <DataState error="Selesaikan level sebelumnya terlebih dahulu." onBack={() => router.back()} />;
+  if (!level) return <DataState error={error} retry={retry} onBack={() => router.back()} />;
+  return <QuizContent key={`${level.id}:${attemptNumber}`} level={level} onRetry={() => setAttemptNumber((value) => value + 1)} />;
+}
+
+function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void }) {
+  const { completeLevel, createAttemptId, streakDays } = useProgress();
+  const [attemptId] = useState(createAttemptId);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const checkedRef = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [xpAwarded, setXpAwarded] = useState(0);
+  const [passed, setPassed] = useState(true);
+  const [wrongQuestionIds, setWrongQuestionIds] = useState<number[]>([]);
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [selectedChips, setSelectedChips] = useState<string>('');
-  const [orderedSteps, setOrderedSteps] = useState<string[]>([]);
+  const [orderedStepIndices, setOrderedStepIndices] = useState<number[]>([]);
   const [typedCode, setTypedCode] = useState<string>('');
 
   const [checked, setChecked] = useState(false);
@@ -47,7 +68,7 @@ export default function QuizScreen() {
         return selectedChips.length > 0;
       case 'order':
         return (
-          orderedSteps.length === (currentQuestion.correctOrder?.length ?? currentQuestion.stepItems?.length ?? 0)
+          orderedStepIndices.length === (currentQuestion.correctOrder?.length ?? currentQuestion.stepItems?.length ?? 0)
         );
       case 'write':
         return typedCode.trim().length > 0;
@@ -57,70 +78,68 @@ export default function QuizScreen() {
   };
 
   const handleCheckAnswer = () => {
-    if (!currentQuestion) return;
-    let correct = false;
-
-    switch (currentQuestion.type) {
-      case 'choice':
-      case 'output':
-        correct = selectedAnswer === currentQuestion.correctAnswer;
-        break;
-      case 'blank':
-        correct = selectedChips === currentQuestion.correctAnswer;
-        break;
-      case 'order':
-        correct =
-          JSON.stringify(orderedSteps) === JSON.stringify(currentQuestion.correctOrder);
-        break;
-      case 'write': {
-        const clean = typedCode.trim();
-        const accepted = currentQuestion.acceptedAnswers ?? [currentQuestion.correctAnswer];
-        correct = accepted.some(
-          (ans) => ans.replace(/\s+/g, '') === clean.replace(/\s+/g, '')
-        );
-        break;
-      }
-    }
+    if (!currentQuestion || checkedRef.current || !hasInput()) return;
+    checkedRef.current = true;
+    const answer = currentQuestion.type === 'order'
+      ? orderedStepIndices.map((index) => currentQuestion.stepItems![index])
+      : currentQuestion.type === 'write' ? typedCode
+        : currentQuestion.type === 'blank' ? selectedChips : selectedAnswer;
+    const correct = isCorrectAnswer(currentQuestion, answer);
 
     setIsCorrect(correct);
     if (correct) {
       setScore((prev) => prev + 1);
-    }
+    } else setWrongQuestionIds((prev) => [...prev, currentQuestion.id]);
     setChecked(true);
   };
 
-  const handleNextQuestion = () => {
-    setChecked(false);
-    setSelectedAnswer('');
-    setSelectedChips('');
-    setOrderedSteps([]);
-    setTypedCode('');
-
+  const handleNextQuestion = async () => {
+    if (savingRef.current || !checkedRef.current) return;
     if (questionIndex + 1 < totalQuestions) {
+      checkedRef.current = false;
+      setChecked(false);
+      setSelectedAnswer('');
+      setSelectedChips('');
+      setOrderedStepIndices([]);
+      setTypedCode('');
       setQuestionIndex((prev) => prev + 1);
     } else {
-      // Selesaikan kuis dan tambahkan XP
-      completeLevel(level.id, level.xp);
-      setIsQuizCompleted(true);
+      savingRef.current = true;
+      setSaving(true);
+      setSaveError(null);
+      try {
+        const result = await completeLevel(level.id, { correctCount: score, totalQuestions, attemptId });
+        setXpAwarded(result.xpAwarded);
+        setPassed(result.passed);
+        setIsQuizCompleted(true);
+      } catch (failure) {
+        setSaveError(errorMessage(failure));
+      } finally {
+        savingRef.current = false;
+        setSaving(false);
+      }
     }
   };
 
-  const handleStepTap = (stepText: string) => {
+  const handleStepTap = (stepIndex: number) => {
     if (checked) return;
-    if (orderedSteps.includes(stepText)) {
-      setOrderedSteps((prev) => prev.filter((s) => s !== stepText));
+    if (orderedStepIndices.includes(stepIndex)) {
+      setOrderedStepIndices((prev) => prev.filter((index) => index !== stepIndex));
     } else {
-      setOrderedSteps((prev) => [...prev, stepText]);
+      setOrderedStepIndices((prev) => [...prev, stepIndex]);
     }
   };
 
   const handleFinish = () => {
-    router.replace('/(tabs)' as any);
+    router.replace('/(tabs)');
   };
 
   const handleClose = () => {
     router.back();
   };
+  const reviewIds = [...new Set(level.questions
+    .filter((question) => wrongQuestionIds.includes(question.id))
+    .flatMap((question) => question.reviewLevelIds ?? []))].sort((a, b) => a - b);
 
   return (
     <Screen
@@ -129,14 +148,15 @@ export default function QuizScreen() {
           <ProgressHeader
             current={questionIndex + 1}
             total={totalQuestions}
-            label={`Latihan: ${level.title}`}
-            onClose={handleClose}
+            label={`${level.examIntro ? 'Ujian' : 'Latihan'}: ${level.title}`}
+            onClose={() => { if (!savingRef.current) handleClose(); }}
           />
         ) : undefined
       }
       footer={
         !isQuizCompleted ? (
           <View style={styles.footerContainer}>
+            {saveError && <Text accessibilityRole="alert" color="danger">{saveError}</Text>}
             {checked && currentQuestion && (
               <FeedbackBanner
                 result={isCorrect ? 'correct' : 'wrong'}
@@ -148,13 +168,13 @@ export default function QuizScreen() {
               />
             )}
             <Button
-              label={!checked ? 'Cek Jawaban' : 'Lanjut'}
-              disabled={!checked && !hasInput()}
+              label={saving ? 'Menyimpan...' : saveError ? 'Coba Simpan Lagi' : !checked ? 'Cek Jawaban' : 'Lanjut'}
+              disabled={saving || (!checked && !hasInput())}
               onPress={!checked ? handleCheckAnswer : handleNextQuestion}
             />
           </View>
         ) : (
-          <Button label="Kembali ke Beranda" onPress={handleFinish} />
+          <Button label={passed ? 'Kembali ke Beranda' : 'Ulangi Ujian'} onPress={passed ? handleFinish : onRetry} />
         )
       }>
       {!isQuizCompleted && currentQuestion ? (
@@ -201,7 +221,7 @@ export default function QuizScreen() {
               <View style={styles.codeBox}>
                 <Text color="onPrimary" style={styles.codeText}>
                   {currentQuestion.codeTemplate?.replace(
-                    '_____',
+                    /_{3,}/g,
                     selectedChips ? `[ ${selectedChips} ]` : '_____'
                   )}
                 </Text>
@@ -216,6 +236,9 @@ export default function QuizScreen() {
                   return (
                     <Pressable
                       key={chip}
+                      accessibilityRole="button"
+                      accessibilityLabel={chip}
+                      accessibilityState={{ selected: isSelected, disabled: checked }}
                       disabled={checked}
                       onPress={() => setSelectedChips(chip)}
                       style={({ pressed }) => [
@@ -242,17 +265,17 @@ export default function QuizScreen() {
                 Ketuk pilihan untuk mengurutkan langkah secara berurutan:
               </Text>
               <View style={styles.stepList}>
-                {currentQuestion.stepItems.map((step) => {
-                  const orderIndex = orderedSteps.indexOf(step);
+                {currentQuestion.stepItems.map((step, index) => {
+                  const orderIndex = orderedStepIndices.indexOf(index);
                   const orderNum = orderIndex !== -1 ? orderIndex + 1 : undefined;
 
                   return (
                     <StepOption
-                      key={step}
+                      key={index}
                       label={step}
                       order={orderNum}
                       disabled={checked}
-                      onPress={() => handleStepTap(step)}
+                      onPress={() => handleStepTap(index)}
                     />
                   );
                 })}
@@ -270,10 +293,13 @@ export default function QuizScreen() {
                 onChangeText={setTypedCode}
                 autoCapitalize="none"
                 autoCorrect={false}
+                multiline
+                textAlignVertical="top"
+                style={styles.codeInput}
                 editable={!checked}
               />
               <Text variant="caption" color="inkSoft">
-                Tips: Perhatikan tanda kurung dan kutip (&quot; &quot;).
+                Gunakan baris baru dan indentasi untuk blok kode. Perhatikan tanda kurung dan kutip.
               </Text>
             </View>
           )}
@@ -281,11 +307,11 @@ export default function QuizScreen() {
       ) : (
         /* Halaman Hasil Kuis Selesai */
         <View style={styles.resultBody}>
-          <ArtImage art={Mascots.celebrate} height={170} />
+          <ArtImage art={passed ? Mascots.celebrate : Mascots.happy} height={170} />
 
           <View style={styles.resultHeading}>
             <Text variant="display" style={styles.centerText}>
-              Latihan Selesai! 🎉
+              {level.examIntro ? passed ? 'Selamat! Kamu Master Algogo! 🎉' : 'Hampir sampai! Yuk, ulangi sedikit lagi.' : 'Latihan Selesai! 🎉'}
             </Text>
             <Text color="inkSoft" style={styles.centerText}>
               Kamu menjawab {score} dari {totalQuestions} soal dengan tepat!
@@ -297,10 +323,10 @@ export default function QuizScreen() {
             <View style={styles.rewardItem}>
               <ArtImage art={Icons.xp} height={32} />
               <Text variant="headline" color="primaryDepth">
-                +{level.xp} XP
+                +{xpAwarded} XP
               </Text>
               <Text variant="caption" color="inkSoft">
-                XP Bertambah
+                {xpAwarded ? 'XP Bertambah' : passed ? 'Level sudah pernah selesai' : 'Jawab benar minimal 11 dari 15 soal'}
               </Text>
             </View>
 
@@ -309,17 +335,24 @@ export default function QuizScreen() {
             <View style={styles.rewardItem}>
               <ArtImage art={Icons.streak} height={32} />
               <Text variant="headline" color="ink">
-                +1 Hari
+                {streakDays} Hari
               </Text>
               <Text variant="caption" color="inkSoft">
-                Streak Bertambah
+                Streak Belajar
               </Text>
             </View>
           </View>
 
+          {!passed && <View style={styles.reviewList}>
+            <Text variant="headline">Coba ulas lagi:</Text>
+            {reviewIds.map((id) => <Pressable key={id} accessibilityRole="button" onPress={() => router.replace({ pathname: '/lesson/[id]', params: { id } })}>
+              <Text color="primaryDepth">Level {id}: {LEVEL_CATALOG.find((item) => item.id === id)?.title}</Text>
+            </Pressable>)}
+            <Button label="Kembali ke Beranda" onPress={handleFinish} />
+          </View>}
           <Text variant="body" style={styles.centerText}>
-            Kemampuan logikamu semakin terasah. Level berikutnya telah terbuka di Peta
-            Belajar!
+            {passed ? level.id === 8 ? 'Lencana Master Algogo berhasil kamu raih!' : 'Latihan selesai. Kamu bisa melanjutkan ke satu level berikutnya di jalur belajar.'
+              : 'XP ujian dan lencana Master Algogo diberikan setelah kamu lulus.'}
           </Text>
         </View>
       )}
@@ -328,6 +361,8 @@ export default function QuizScreen() {
 }
 
 const styles = StyleSheet.create({
+  codeInput: { minHeight: 160, height: 180, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 13, lineHeight: 21, paddingVertical: Spacing[3] },
+  reviewList: { gap: Spacing[3] },
   quizBody: {
     gap: Spacing[3],
   },

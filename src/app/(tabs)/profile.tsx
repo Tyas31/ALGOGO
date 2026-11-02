@@ -9,20 +9,35 @@ import { Mascots } from '@/constants/assets';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useProgress } from '@/hooks/use-progress';
+import { errorMessage } from '@/lib/errors';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { streakDays, xp, rank, completedLevelTitles, completedLevels, resetProgress } =
     useProgress();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
-  const handleLogout = () => {
-    signOut();
+  const handleLogout = async () => {
+    setBusy(true);
+    setActionError(null);
+    try { await signOut(); }
+    catch (failure) { setActionError(errorMessage(failure)); }
+    finally { setBusy(false); }
   };
 
-  const handleResetData = () => {
-    resetProgress();
-    setShowSettingsModal(false);
+  const handleResetData = async () => {
+    if (!confirmReset) { setConfirmReset(true); return; }
+    setBusy(true);
+    setActionError(null);
+    try {
+      await resetProgress();
+      setConfirmReset(false);
+      setShowSettingsModal(false);
+    } catch (failure) { setActionError(errorMessage(failure)); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -31,11 +46,11 @@ export default function ProfileScreen() {
       <ProfileHeader
         name={user?.name ?? 'Sobat Algo'}
         handle={(user?.name ?? 'algo_learner').toLowerCase().replace(/\s+/g, '_')}
-        joinedYear={2026}
-        following={14}
-        followers={28}
+        joinedYear={user?.joinedYear ?? new Date().getFullYear()}
+        following={0}
+        followers={0}
         avatar={Mascots.head}
-        onSettings={() => setShowSettingsModal(true)}
+        onSettings={() => { setConfirmReset(false); setActionError(null); setShowSettingsModal(true); }}
       />
 
       {/* Konten Badan Profil */}
@@ -89,8 +104,10 @@ export default function ProfileScreen() {
           <Button
             label="Keluar dari Akun"
             onPress={handleLogout}
+            disabled={busy}
             style={styles.logoutButton}
           />
+          {actionError && !showSettingsModal && <Text accessibilityRole="alert" color="danger">{actionError}</Text>}
         </View>
       </View>
 
@@ -107,12 +124,15 @@ export default function ProfileScreen() {
               Kamu login sebagai <Text variant="bodyStrong">{user?.name}</Text>.
             </Text>
 
+            {actionError && <Text accessibilityRole="alert" color="danger">{actionError}</Text>}
+            {confirmReset && <Text>XP, streak, dan level selesai akan direset di akun ini. Riwayat latihan tetap tersimpan.</Text>}
             <View style={styles.modalButtons}>
               <Pressable
                 onPress={handleResetData}
+                disabled={busy}
                 style={({ pressed }) => [styles.resetBtn, pressed && styles.pressed]}>
                 <Text variant="label" color="danger">
-                  Reset Semua Kemajuan Belajar
+                  {busy ? 'Menyimpan...' : confirmReset ? 'Ya, Reset Progres' : 'Reset Kemajuan Belajar'}
                 </Text>
               </Pressable>
 

@@ -27,8 +27,7 @@ export default function MissionsScreen() {
   // Hitung progres dinamis
   const completedCount = completedLevels.length;
   const streakProgress = Math.min(streakDays, 2);
-  const dailyMaterialProgress = Math.min(completedCount, 2);
-  const totalMissionPoints = 4; // Mock poin misi bulanan sesuai desain
+  const materialProgress = Math.min(completedCount, 2);
 
   return (
     <View style={styles.root}>
@@ -42,12 +41,12 @@ export default function MissionsScreen() {
             <View style={styles.headerTopRow}>
               <View style={styles.headerTextCol}>
                 <Text variant="display" color="onPrimary" style={styles.headerTitle}>
-                  Misi Oktober
+                  Misi Belajar
                 </Text>
                 <View style={styles.timerRow}>
                   <ClockIcon size={14} color="rgba(255,255,255,0.85)" />
                   <Text variant="caption" color="onPrimary" style={styles.timerText}>
-                    21 hari
+                    Kemajuan tersimpan
                   </Text>
                 </View>
               </View>
@@ -66,10 +65,10 @@ export default function MissionsScreen() {
             <View style={styles.targetCard}>
               <View style={styles.targetCardTop}>
                 <Text variant="bodyStrong" style={styles.targetTitle}>
-                  Dapatkan 20 Poin Misi
+                  Tuntaskan 8 Level
                 </Text>
                 <Text variant="bodyStrong" style={styles.targetXp}>
-                  + 500 XP
+                  Total 500 XP
                 </Text>
               </View>
 
@@ -78,12 +77,12 @@ export default function MissionsScreen() {
                   <View
                     style={[
                       styles.progressFill,
-                      { width: `${(totalMissionPoints / 20) * 100}%` },
+                      { width: `${(completedCount / 8) * 100}%` },
                     ]}
                   />
                 </View>
                 <Text variant="caption" color="inkSoft" style={styles.progressText}>
-                  {totalMissionPoints}/20
+                  {completedCount}/8
                 </Text>
               </View>
             </View>
@@ -95,12 +94,12 @@ export default function MissionsScreen() {
             <View style={styles.missionSection}>
               <View style={styles.sectionHeaderRow}>
                 <Text variant="headline" style={styles.sectionTitle}>
-                  Misi Minggu Ini
+                  Target Runtunan
                 </Text>
                 <View style={styles.timerRowDark}>
                   <ClockIcon size={14} color={Colors.inkSoft} />
                   <Text variant="caption" color="inkSoft" style={styles.timerTextDark}>
-                    1 hari
+                    2 hari
                   </Text>
                 </View>
               </View>
@@ -139,7 +138,7 @@ export default function MissionsScreen() {
             <View style={styles.dailyMissionRow}>
               <View style={styles.dailyMissionTextCol}>
                 <Text variant="caption" color="inkSoft" style={styles.dailyLabel}>
-                  Misi Harian
+                  Target Belajar
                 </Text>
                 <Text variant="headline" style={styles.dailyTitle}>
                   Mulai runtunan
@@ -176,10 +175,10 @@ export default function MissionsScreen() {
             <View style={styles.dailyMissionRow}>
               <View style={styles.dailyMissionTextCol}>
                 <Text variant="caption" color="inkSoft" style={styles.dailyLabel}>
-                  Misi Harian
+                  Target Materi
                 </Text>
                 <Text variant="headline" style={styles.dailyTitle}>
-                  Selesaikan 2 materi
+                  Selesaikan 2 level
                 </Text>
 
                 <View style={styles.progressRowDaily}>
@@ -187,12 +186,12 @@ export default function MissionsScreen() {
                     <View
                       style={[
                         styles.progressFill,
-                        { width: `${(dailyMaterialProgress / 2) * 100}%` },
+                        { width: `${(materialProgress / 2) * 100}%` },
                       ]}
                     />
                   </View>
                   <Text variant="caption" color="inkSoft" style={styles.progressText}>
-                    {dailyMaterialProgress}/2
+                    {materialProgress}/2
                   </Text>
                 </View>
               </View>

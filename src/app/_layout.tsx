@@ -11,9 +11,10 @@ import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { LoadingScreen } from '@/components/loading-screen';
+import { DataState } from '@/components/data-state';
 import { Colors } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
-import { ProgressProvider } from '@/hooks/use-progress';
+import { ProgressProvider, useProgress } from '@/hooks/use-progress';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -61,10 +62,18 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { user } = useAuth();
+  const { user, initializing } = useAuth();
+  if (initializing) return <DataState />;
+  return <ProgressProvider key={user?.uid ?? 'guest'}><RootStack /></ProgressProvider>;
+}
 
-  const navigator = (
-    <ProgressProvider userName={user?.name}>
+function RootStack() {
+  const { user, signOut } = useAuth();
+  const { loading, error, retry } = useProgress();
+
+  const navigator = user && (loading || error) ? (
+    <DataState error={error} retry={retry} onBack={error ? () => { void signOut().catch(retry); } : undefined} />
+  ) : (
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.surface } }}>
         <Stack.Protected guard={!user}>
           <Stack.Screen name="login" />
@@ -75,7 +84,6 @@ function RootNavigator() {
           <Stack.Screen name="quiz/[id]" />
         </Stack.Protected>
       </Stack>
-    </ProgressProvider>
   );
 
   if (Platform.OS === 'web') {

@@ -3,22 +3,43 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ArtImage } from '@/components/ngulik/art-image';
+import { DataState } from '@/components/data-state';
 import { Button } from '@/components/ngulik/button';
 import { CalloutQuestion } from '@/components/ngulik/callout';
 import { ConceptItem } from '@/components/ngulik/concept-item';
 import { ProgressHeader } from '@/components/ngulik/progress-header';
 import { Screen } from '@/components/ngulik/screen';
 import { SummaryCard } from '@/components/ngulik/summary-card';
+import { LessonContentBlocks } from '@/components/ngulik/lesson-content-blocks';
 import { Text } from '@/components/ngulik/text';
 import { Icons, Illustrations, Mascots } from '@/constants/assets';
 import { Colors, Fonts, Radius, Shadows, Spacing } from '@/constants/theme';
-import { CURRICULUM } from '@/data/curriculum';
+import type { LevelData } from '@/data/curriculum';
+import { useLevel } from '@/hooks/use-level';
+import { useProgress } from '@/hooks/use-progress';
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const levelId = parseInt(id ?? '1', 10);
-  const level = CURRICULUM.find((lvl) => lvl.id === levelId) ?? CURRICULUM[0];
+  const levelId = Number(id);
+  const { level, error, retry } = useLevel(levelId);
+  const { unlockedLevels } = useProgress();
+  if (!unlockedLevels.includes(levelId)) return <DataState error="Selesaikan level sebelumnya terlebih dahulu." onBack={() => router.back()} />;
+  if (!level) return <DataState error={error} retry={retry} onBack={() => router.back()} />;
+  if (level.examIntro) return <ExamIntroduction level={level} />;
+  return <LessonContent key={level.id} level={level} />;
+}
 
+function ExamIntroduction({ level }: { level: LevelData }) {
+  return <Screen
+    header={<ProgressHeader current={0} total={level.questions.length} label={level.title} showProgress={false} onClose={() => router.back()} />}
+    footer={<Button label="Mulai Ujian" onPress={() => router.replace({ pathname: '/quiz/[id]', params: { id: level.id } })} />}>
+    <ArtImage art={Mascots.wave} height={150} />
+    <Text variant="display">{level.examIntro!.title}</Text>
+    <Text style={{ lineHeight: 25 }}>{level.examIntro!.body}</Text>
+  </Screen>;
+}
+
+function LessonContent({ level }: { level: LevelData }) {
   const [slideIndex, setSlideIndex] = useState(0);
   const totalSlides = level.slides.length;
   const isConclusion = slideIndex >= totalSlides;
@@ -30,7 +51,7 @@ export default function LessonScreen() {
       setSlideIndex((prev) => prev + 1);
     } else {
       // Pindah ke kuis latihan
-      router.replace(`/quiz/${level.id}` as any);
+      router.replace({ pathname: '/quiz/[id]', params: { id: level.id } });
     }
   };
 
@@ -70,6 +91,7 @@ export default function LessonScreen() {
 
           {/* Judul Halaman */}
           <Text variant="display">{currentSlide.title}</Text>
+          {currentSlide.blocks && <LessonContentBlocks blocks={currentSlide.blocks} />}
 
           {/* Teks Cerita / Penjelasan */}
           {currentSlide.story && (
