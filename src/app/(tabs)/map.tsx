@@ -24,6 +24,24 @@ export default function MissionsScreen() {
   const insets = useSafeAreaInsets();
   const { streakDays, completedLevels } = useProgress();
 
+  // Mengambil informasi bulan dan sisa hari
+  const currentDate = new Date();
+
+  const monthName = new Intl.DateTimeFormat('id-ID', {
+    month: 'long',
+  }).format(currentDate);
+
+  const formattedMonth =
+    monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
+  const lastDayOfMonth = new Date(
+    currentDate.getFullYear(),      
+    currentDate.getMonth() + 1,
+    0
+  ).getDate();
+
+  const remainingDays = lastDayOfMonth - currentDate.getDate();
+
   // Hitung progres dinamis
   const completedCount = completedLevels.length;
   const streakProgress = Math.min(streakDays, 2);
@@ -41,12 +59,12 @@ export default function MissionsScreen() {
             <View style={styles.headerTopRow}>
               <View style={styles.headerTextCol}>
                 <Text variant="display" color="onPrimary" style={styles.headerTitle}>
-                  Misi Belajar
+                  Misi {formattedMonth}
                 </Text>
                 <View style={styles.timerRow}>
                   <ClockIcon size={14} color="rgba(255,255,255,0.85)" />
                   <Text variant="caption" color="onPrimary" style={styles.timerText}>
-                    Kemajuan tersimpan
+                    {remainingDays} hari lagi
                   </Text>
                 </View>
               </View>
