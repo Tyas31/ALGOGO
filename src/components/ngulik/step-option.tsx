@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { OptionShell } from '@/components/ngulik/answer-option';
 import { Text } from '@/components/ngulik/text';
 import { Colors, Fonts, Radius } from '@/constants/theme';
+import { withTap } from '@/lib/sounds';
 
 type StepOptionProps = {
   label: string;
@@ -17,7 +18,7 @@ export function StepOption({ label, order, onPress, disabled }: StepOptionProps)
   return (
     <OptionShell
       label={label}
-      onPress={onPress}
+      onPress={withTap(onPress)}
       disabled={disabled}
       accessibilityRole="button"
       leading={

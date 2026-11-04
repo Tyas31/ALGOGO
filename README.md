@@ -49,7 +49,8 @@ pengaturan Firebase, aturan XP/streak, batas penilaian di klien, dan pengelolaan
 - Konfigurasi aplikasi bersama: `.env` dan `src/lib/firebase.ts`; override opsional: `.env.local`.
 - Integrasi data: `src/services/firestore.ts`.
 - Aturan database: `firestore.rules`.
-- Sumber materi: `Materi-Soal-Algogo.md`, dengan 8 level, 35 slide, dan 50 soal.
+- Sumber materi: `Materi-Soal-Algogo.md`, dengan 6 unit, 33 level, 150 slide, dan 185 soal.
+- Unggah materi dan reset progres (khusus pemilik proyek): `npm run firebase:seed`, lihat [Panduan Firestore](docs/FIRESTORE.md).
 - Satu bintang mewakili satu level; hanya level berikutnya yang terbuka setelah kuis selesai.
 - Sinkronisasi sumber: `npm run curriculum:sync`.
 - Uji integrasi Firebase dengan akun sementara: `npm run test:firestore`.

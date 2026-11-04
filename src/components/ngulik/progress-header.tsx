@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { CloseIcon } from '@/components/ngulik/icons';
 import { Text } from '@/components/ngulik/text';
 import { Colors, Radius, Sizes, Spacing } from '@/constants/theme';
+import { withTap } from '@/lib/sounds';
 
 type ProgressHeaderProps = {
   current: number;
@@ -30,7 +31,7 @@ export function ProgressHeader({
           accessibilityRole="button"
           accessibilityLabel="Tutup"
           hitSlop={12}
-          onPress={onClose}>
+          onPress={withTap(onClose)}>
           <CloseIcon />
         </Pressable>
         {showProgress ? (

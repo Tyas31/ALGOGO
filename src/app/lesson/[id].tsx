@@ -17,6 +17,7 @@ import { Colors, Fonts, Radius, Shadows, Spacing } from '@/constants/theme';
 import type { LevelData } from '@/data/curriculum';
 import { useLevel } from '@/hooks/use-level';
 import { useProgress } from '@/hooks/use-progress';
+import { playSound } from '@/lib/sounds';
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -48,6 +49,8 @@ function LessonContent({ level }: { level: LevelData }) {
 
   const handleNext = () => {
     if (slideIndex < totalSlides) {
+      // Halaman materi terakhir: layar penutup "Materi Selesai" muncul berikutnya.
+      if (slideIndex === totalSlides - 1) playSound('complete');
       setSlideIndex((prev) => prev + 1);
     } else {
       // Pindah ke kuis latihan

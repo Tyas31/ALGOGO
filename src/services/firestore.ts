@@ -1,13 +1,13 @@
 import type { User } from 'firebase/auth';
 import {
-  collection, doc, getDoc, getDocs, onSnapshot, orderBy,
-  query, runTransaction, serverTimestamp, getDocFromServer, updateDoc,
+  collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy,
+  query, runTransaction, serverTimestamp, setDoc, getDocFromServer, updateDoc, where,
   type Timestamp,
 } from 'firebase/firestore';
 
 import type { LevelData, LessonSlide, QuestionData } from '@/data/curriculum';
 import { getDatabase } from '@/lib/firebase';
-import { finishLevel, initialProgress, type ProgressState } from '@/lib/progress-state';
+import { finishLevel, initialProgress, LEVEL_XP, type ProgressState } from '@/lib/progress-state';
 
 export type AppUser = { uid: string; name: string; email: string; joinedYear: number };
 
@@ -108,10 +108,9 @@ export async function ensureAccount(user: AppUser) {
     }
   });
 
-  const board = await getDocFromServer(boardRef);
-  if (board.exists() && board.data().updatedAt) {
-    rememberServerTime(user.uid, board.data().updatedAt as Timestamp);
-  }
+  // Leaderboard tidak lagi ditulis ulang saat login, jadi updatedAt-nya bisa berumur
+  // berhari-hari. Ambil jam server dari profil agar streak dihitung dari hari ini.
+  await studyNow(user.uid);
 }
 
 export function watchProgress(
@@ -189,6 +188,36 @@ export function watchLeaderboard(
   );
 }
 
+/** Pantau uid yang diikuti pengguna ini. */
+export function watchFollowing(uid: string, next: (value: string[]) => void, error: (error: Error) => void) {
+  return onSnapshot(
+    query(collection(getDatabase(), 'follows'), where('follower', '==', uid)),
+    (snapshot) => next(snapshot.docs.map((entry) => String(entry.data().followed))),
+    error
+  );
+}
+
+/** Pantau uid yang mengikuti pengguna ini. */
+export function watchFollowers(uid: string, next: (value: string[]) => void, error: (error: Error) => void) {
+  return onSnapshot(
+    query(collection(getDatabase(), 'follows'), where('followed', '==', uid)),
+    (snapshot) => next(snapshot.docs.map((entry) => String(entry.data().follower))),
+    error
+  );
+}
+
+export async function followUser(uid: string, targetUid: string) {
+  await setDoc(doc(getDatabase(), 'follows', `${uid}_${targetUid}`), {
+    follower: uid,
+    followed: targetUid,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function unfollowUser(uid: string, targetUid: string) {
+  await deleteDoc(doc(getDatabase(), 'follows', `${uid}_${targetUid}`));
+}
+
 export async function saveQuiz(
   user: AppUser,
   levelId: number,
@@ -212,7 +241,7 @@ export async function saveQuiz(
       const data = existingAttempt.data();
       return {
         xpAwarded: Number(data.xpAwarded),
-        passed: data.passed ?? (data.levelId !== 8 || data.correctCount >= 11),
+        passed: Boolean(data.passed),
       };
     }
 
@@ -315,7 +344,7 @@ export async function loadLevel(levelId: number): Promise<LevelData> {
   const cached = levelCache.get(levelId);
   if (cached && Date.now() - cached.loadedAt < 60_000) return cached.level;
 
-  if (!Number.isInteger(levelId) || levelId < 1 || levelId > 8) {
+  if (!Number.isInteger(levelId) || levelId < 1 || levelId > LEVEL_XP.length) {
     throw new Error('Level tidak ditemukan.');
   }
 

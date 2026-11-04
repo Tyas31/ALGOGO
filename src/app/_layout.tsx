@@ -82,6 +82,7 @@ function RootStack() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="lesson/[id]" />
           <Stack.Screen name="quiz/[id]" />
+          <Stack.Screen name="friends" />
         </Stack.Protected>
       </Stack>
   );

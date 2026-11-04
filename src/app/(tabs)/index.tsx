@@ -15,6 +15,7 @@ import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { LEVEL_CATALOG } from '@/data/level-catalog';
 import { buildLearningPath, type TrailNode } from '@/data/learning-path';
 import { useProgress } from '@/hooks/use-progress';
+import { playSound } from '@/lib/sounds';
 
 const TRAIL_SECTIONS = buildLearningPath(LEVEL_CATALOG);
 
@@ -106,7 +107,7 @@ export default function HomeScreen() {
                 {section.nodes.map((node) => {
                   const status = getNodeStatus(node);
                   const isSelected = selectedNodeId === node.id;
-                  const isFinal = node.id === 8;
+                  const isFinal = node.id === LEVEL_CATALOG.length;
 
                   return (
                     <View
@@ -134,6 +135,7 @@ export default function HomeScreen() {
                           label={`${node.title} (${status})`}
                           onPress={() => {
                             if (status === 'locked') {
+                              playSound('wrong');
                               setLockedNotice('Selesaikan level sebelumnya untuk membuka materi ini! 🔒');
                               setTimeout(() => setLockedNotice(null), 2500);
                               setSelectedNodeId(null);

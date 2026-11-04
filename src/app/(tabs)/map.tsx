@@ -4,6 +4,7 @@ import Svg, { Circle, Polyline } from 'react-native-svg';
 
 import { Text } from '@/components/ngulik/text';
 import { Colors, Fonts, Radius, Shadows, Sizes, Spacing } from '@/constants/theme';
+import { LEVEL_CATALOG } from '@/data/level-catalog';
 import { useProgress } from '@/hooks/use-progress';
 
 const misiHeaderCatImg = require('@/assets/ngulik/ilustrasi/misi-header-cat.png');
@@ -44,6 +45,8 @@ export default function MissionsScreen() {
 
   // Hitung progres dinamis
   const completedCount = completedLevels.length;
+  const totalLevels = LEVEL_CATALOG.length;
+  const totalXp = LEVEL_CATALOG.reduce((sum, level) => sum + level.xp, 0);
   const streakProgress = Math.min(streakDays, 2);
   const materialProgress = Math.min(completedCount, 2);
 
@@ -83,10 +86,10 @@ export default function MissionsScreen() {
             <View style={styles.targetCard}>
               <View style={styles.targetCardTop}>
                 <Text variant="bodyStrong" style={styles.targetTitle}>
-                  Tuntaskan 8 Level
+                  Tuntaskan {totalLevels} Level
                 </Text>
                 <Text variant="bodyStrong" style={styles.targetXp}>
-                  Total 500 XP
+                  Total {totalXp} XP
                 </Text>
               </View>
 
@@ -95,12 +98,12 @@ export default function MissionsScreen() {
                   <View
                     style={[
                       styles.progressFill,
-                      { width: `${(completedCount / 8) * 100}%` },
+                      { width: `${(completedCount / totalLevels) * 100}%` },
                     ]}
                   />
                 </View>
                 <Text variant="caption" color="inkSoft" style={styles.progressText}>
-                  {completedCount}/8
+                  {completedCount}/{totalLevels}
                 </Text>
               </View>
             </View>

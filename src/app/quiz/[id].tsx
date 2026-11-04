@@ -19,6 +19,7 @@ import { useLevel } from '@/hooks/use-level';
 import { useProgress } from '@/hooks/use-progress';
 import { errorMessage } from '@/lib/errors';
 import { isCorrectAnswer } from '@/lib/quiz-answers';
+import { playSound, withTap } from '@/lib/sounds';
 import { LEVEL_CATALOG } from '@/data/level-catalog';
 
 export default function QuizScreen() {
@@ -43,7 +44,13 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
   const [passed, setPassed] = useState(true);
   const [wrongQuestionIds, setWrongQuestionIds] = useState<number[]>([]);
 
-  const [questionIndex, setQuestionIndex] = useState(0);
+  // Putaran 0 = semua soal; putaran berikutnya mengulang soal yang belum tepat.
+  // Skor dan XP hanya dihitung dari jawaban pertama di putaran 0.
+  const [queue, setQueue] = useState(() => level.questions.map((_, index) => index));
+  const [position, setPosition] = useState(0);
+  const [round, setRound] = useState(0);
+  const [missed, setMissed] = useState<number[]>([]);
+  const [showReviewIntro, setShowReviewIntro] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [selectedChips, setSelectedChips] = useState<string>('');
   const [orderedStepIndices, setOrderedStepIndices] = useState<number[]>([]);
@@ -55,6 +62,8 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
   const [isQuizCompleted, setIsQuizCompleted] = useState(false);
 
   const totalQuestions = level.questions.length;
+  const isFinalLevel = level.id === LEVEL_CATALOG.length;
+  const questionIndex = queue[position];
   const currentQuestion: QuestionData | undefined = level.questions[questionIndex];
 
   // Cek apakah user sudah memberikan input
@@ -87,38 +96,65 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
     const correct = isCorrectAnswer(currentQuestion, answer);
 
     setIsCorrect(correct);
-    if (correct) {
-      setScore((prev) => prev + 1);
-    } else setWrongQuestionIds((prev) => [...prev, currentQuestion.id]);
+    playSound(correct ? 'correct' : 'wrong');
+    if (!correct) setMissed((prev) => [...prev, questionIndex]);
+    if (round === 0) {
+      if (correct) setScore((prev) => prev + 1);
+      else setWrongQuestionIds((prev) => [...prev, currentQuestion.id]);
+    }
     setChecked(true);
+  };
+
+  const resetAnswer = () => {
+    checkedRef.current = false;
+    setChecked(false);
+    setSelectedAnswer('');
+    setSelectedChips('');
+    setOrderedStepIndices([]);
+    setTypedCode('');
+  };
+
+  const saveResult = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const result = await completeLevel(level.id, { correctCount: score, totalQuestions, attemptId });
+      setXpAwarded(result.xpAwarded);
+      setPassed(result.passed);
+      setShowReviewIntro(false);
+      setIsQuizCompleted(true);
+      playSound(result.passed ? 'complete' : 'wrong');
+    } catch (failure) {
+      setSaveError(errorMessage(failure));
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   const handleNextQuestion = async () => {
     if (savingRef.current || !checkedRef.current) return;
-    if (questionIndex + 1 < totalQuestions) {
-      checkedRef.current = false;
-      setChecked(false);
-      setSelectedAnswer('');
-      setSelectedChips('');
-      setOrderedStepIndices([]);
-      setTypedCode('');
-      setQuestionIndex((prev) => prev + 1);
+    if (position + 1 < queue.length) {
+      resetAnswer();
+      setPosition((prev) => prev + 1);
+    } else if (missed.length > 0) {
+      // Sebelum mengulang, tampilkan halaman pemberitahuan dulu.
+      setShowReviewIntro(true);
     } else {
-      savingRef.current = true;
-      setSaving(true);
-      setSaveError(null);
-      try {
-        const result = await completeLevel(level.id, { correctCount: score, totalQuestions, attemptId });
-        setXpAwarded(result.xpAwarded);
-        setPassed(result.passed);
-        setIsQuizCompleted(true);
-      } catch (failure) {
-        setSaveError(errorMessage(failure));
-      } finally {
-        savingRef.current = false;
-        setSaving(false);
-      }
+      await saveResult();
     }
+  };
+
+  const startReview = () => {
+    resetAnswer();
+    setQueue(missed);
+    setMissed([]);
+    setPosition(0);
+    setRound((prev) => prev + 1);
+    setSaveError(null);
+    setShowReviewIntro(false);
   };
 
   const handleStepTap = (stepIndex: number) => {
@@ -141,14 +177,52 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
     .filter((question) => wrongQuestionIds.includes(question.id))
     .flatMap((question) => question.reviewLevelIds ?? []))].sort((a, b) => a - b);
 
+  if (showReviewIntro) {
+    return (
+      <Screen
+        footer={
+          <View style={styles.footerContainer}>
+            {saveError && <Text accessibilityRole="alert" color="danger" style={styles.centerText}>{saveError}</Text>}
+            <Button label="Ulangi Soal" disabled={saving} onPress={startReview} />
+            <Pressable
+              accessibilityRole="button"
+              disabled={saving}
+              onPress={() => { playSound('tap'); saveResult(); }}
+              style={({ pressed }) => [styles.skipLink, pressed && styles.pressed]}>
+              <Text variant="label" color="inkSoft">
+                {saving ? 'Menyimpan...' : 'Lewati, lihat hasil'}
+              </Text>
+            </Pressable>
+          </View>
+        }>
+        <View style={styles.resultBody}>
+          <ArtImage art={Mascots.think} height={190} />
+          <View style={styles.resultHeading}>
+            <Text variant="display" style={styles.centerText}>
+              Yuk, ulangi soal yang belum tepat!
+            </Text>
+            <Text color="inkSoft" style={styles.centerText}>
+              Ada {missed.length} soal yang tadi belum tepat. Kerjakan sekali lagi supaya kamu makin paham.
+            </Text>
+          </View>
+          <View style={styles.reviewNote}>
+            <Text variant="caption" color="inkSoft" style={styles.centerText}>
+              Tenang, skor dan XP tetap dihitung dari jawaban pertamamu ({score}/{totalQuestions}).
+            </Text>
+          </View>
+        </View>
+      </Screen>
+    );
+  }
+
   return (
     <Screen
       header={
         !isQuizCompleted ? (
           <ProgressHeader
-            current={questionIndex + 1}
-            total={totalQuestions}
-            label={`${level.examIntro ? 'Ujian' : 'Latihan'}: ${level.title}`}
+            current={position + 1}
+            total={queue.length}
+            label={round > 0 ? `Ulangi soal: ${level.title}` : `${level.examIntro ? 'Ujian' : 'Latihan'}: ${level.title}`}
             onClose={() => { if (!savingRef.current) handleClose(); }}
           />
         ) : undefined
@@ -170,6 +244,7 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
             <Button
               label={saving ? 'Menyimpan...' : saveError ? 'Coba Simpan Lagi' : !checked ? 'Cek Jawaban' : 'Lanjut'}
               disabled={saving || (!checked && !hasInput())}
+              silent={!checked}
               onPress={!checked ? handleCheckAnswer : handleNextQuestion}
             />
           </View>
@@ -240,7 +315,7 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
                       accessibilityLabel={chip}
                       accessibilityState={{ selected: isSelected, disabled: checked }}
                       disabled={checked}
-                      onPress={() => setSelectedChips(chip)}
+                      onPress={withTap(() => setSelectedChips(chip))}
                       style={({ pressed }) => [
                         styles.chipBtn,
                         isSelected && styles.chipBtnSelected,
@@ -311,7 +386,9 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
 
           <View style={styles.resultHeading}>
             <Text variant="display" style={styles.centerText}>
-              {level.examIntro ? passed ? 'Selamat! Kamu Master Algogo! 🎉' : 'Hampir sampai! Yuk, ulangi sedikit lagi.' : 'Latihan Selesai! 🎉'}
+              {level.examIntro
+                ? passed ? isFinalLevel ? 'Selamat! Kamu Master Algogo! 🎉' : 'Selamat! Ujian lulus! 🎉' : 'Hampir sampai! Yuk, ulangi sedikit lagi.'
+                : 'Latihan Selesai! 🎉'}
             </Text>
             <Text color="inkSoft" style={styles.centerText}>
               Kamu menjawab {score} dari {totalQuestions} soal dengan tepat!
@@ -326,7 +403,7 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
                 +{xpAwarded} XP
               </Text>
               <Text variant="caption" color="inkSoft">
-                {xpAwarded ? 'XP Bertambah' : passed ? 'Level sudah pernah selesai' : 'Jawab benar minimal 11 dari 15 soal'}
+                {xpAwarded ? 'XP Bertambah' : passed ? 'Level sudah pernah selesai' : `Jawab benar minimal ${level.passingCorrectCount} dari ${totalQuestions} soal`}
               </Text>
             </View>
 
@@ -351,8 +428,8 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
             <Button label="Kembali ke Beranda" onPress={handleFinish} />
           </View>}
           <Text variant="body" style={styles.centerText}>
-            {passed ? level.id === 8 ? 'Lencana Master Algogo berhasil kamu raih!' : 'Latihan selesai. Kamu bisa melanjutkan ke satu level berikutnya di jalur belajar.'
-              : 'XP ujian dan lencana Master Algogo diberikan setelah kamu lulus.'}
+            {passed ? isFinalLevel ? 'Lencana Master Algogo berhasil kamu raih!' : 'Kamu bisa melanjutkan ke satu level berikutnya di jalur belajar.'
+              : isFinalLevel ? 'XP ujian dan lencana Master Algogo diberikan setelah kamu lulus.' : 'XP ujian diberikan setelah kamu lulus.'}
           </Text>
         </View>
       )}
@@ -363,6 +440,18 @@ function QuizContent({ level, onRetry }: { level: LevelData; onRetry: () => void
 const styles = StyleSheet.create({
   codeInput: { minHeight: 160, height: 180, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 13, lineHeight: 21, paddingVertical: Spacing[3] },
   reviewList: { gap: Spacing[3] },
+  reviewNote: {
+    width: '100%',
+    padding: Spacing[3],
+    backgroundColor: Colors.surfaceRaised,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.line,
+  },
+  skipLink: {
+    alignSelf: 'center',
+    paddingVertical: Spacing[1],
+  },
   quizBody: {
     gap: Spacing[3],
   },

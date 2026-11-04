@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-nat
 
 import { Text } from '@/components/ngulik/text';
 import { Colors, Radius, Shadows, Sizes, Spacing } from '@/constants/theme';
+import { withTap } from '@/lib/sounds';
 
 type ButtonProps = {
   label: string;
@@ -11,16 +12,18 @@ type ButtonProps = {
   /** Optional icon shown left of the label. */
   icon?: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Tanpa bunyi "tik", misalnya saat aksinya sudah memutar suara sendiri. */
+  silent?: boolean;
 };
 
 /** Tombol utama: satu per layar, di tengah, untuk satu aksi berikutnya. */
-export function Button({ label, onPress, disabled = false, icon, style }: ButtonProps) {
+export function Button({ label, onPress, disabled = false, icon, style, silent = false }: ButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={silent ? onPress : withTap(onPress)}
       style={({ pressed }) => [
         styles.base,
         disabled ? styles.disabled : pressed ? styles.pressed : styles.raised,

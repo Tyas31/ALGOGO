@@ -35,6 +35,8 @@ export const Icons = {
   streak: art(require('@/assets/ngulik/ikon/icon-streak.svg'), 1),
   xp: art(require('@/assets/ngulik/ikon/icon-xp.svg'), 1),
   rank: art(require('@/assets/ngulik/ikon/icon-rank.svg'), 1),
+  /** Bintang level aktif, sama dengan node di peta belajar. */
+  star: art(require('@/assets/ngulik/ikon/star-active.png'), 517 / 488),
 };
 
 export const NavIcons = {

@@ -49,3 +49,6 @@ example
 .claude/
 
 .env
+# Firebase Admin key (jangan pernah di-commit)
+*service-account*.json
+*firebase-adminsdk*.json

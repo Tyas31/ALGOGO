@@ -45,13 +45,16 @@ try {
   const { progressPath } = loadService('lib/progress-state');
   const account = service.appUser(user);
   await service.ensureAccount(account);
+  const { LEVEL_XP, LEVEL_QUESTION_COUNTS, LEVEL_PASSING_COUNTS } = loadService('lib/progress-state');
   const first = await service.loadLevel(1);
   const second = await service.loadLevel(2);
   assert.notEqual(first.questions[0].title, second.questions[0].title);
-  assert.equal(second.questions[2].stepItems.filter((step) => step === 'print(hewan)').length, 2);
-  console.log('PASS levels 1 and 2 load different documented questions, including duplicate order lines.');
+  const pets = (await service.loadLevel(7)).questions.find((question) => question.title === 'Susun Kode: Hewan Peliharaan');
+  assert.equal(pets.stepItems.filter((step) => step === 'print(hewan)').length, 2);
+  console.log('PASS levels load different documented questions, including duplicate order lines.');
 
-  const submit = (id, correctCount = 5, totalQuestions = 5, attemptId = service.newAttemptId(user.uid)) =>
+  const count = (id) => LEVEL_QUESTION_COUNTS[id - 1];
+  const submit = (id, correctCount = count(id), totalQuestions = count(id), attemptId = service.newAttemptId(user.uid)) =>
     service.saveQuiz(account, id, { correctCount, totalQuestions, attemptId });
   const state = async () => (await getDoc(doc(db, 'progress', user.uid))).data();
   await assert.rejects(submit(1, 1, 1), /tidak valid/);
@@ -68,20 +71,28 @@ try {
   const concurrent = await Promise.all([submit(2), submit(2)]);
   assert.deepEqual(concurrent.map((result) => result.xpAwarded).sort((a, b) => a - b), [0, 50]);
   console.log('PASS concurrent completions of a new level award XP exactly once.');
-  for (let id = 3; id <= 7; id++) await submit(id);
-  const exam = await service.loadLevel(8);
-  assert.equal(exam.questions.length, 15);
-  assert.equal(exam.slides.length, 0);
-  assert.equal(exam.passingCorrectCount, 11);
-  assert.equal(exam.questions.filter((question) => question.reviewLevelIds?.length).length, 15);
-  assert.deepEqual(await submit(8, 10, 15), { xpAwarded: 0, passed: false });
-  assert.equal((await state()).xp, 350);
-  assert.deepEqual((await state()).completedLevels, [1, 2, 3, 4, 5, 6, 7]);
-  assert.deepEqual(await submit(8, 11, 15), { xpAwarded: 150, passed: true });
-  assert.equal((await state()).xp, 500);
+
+  const finalId = LEVEL_XP.length;
+  const xpBefore = (id) => LEVEL_XP.slice(0, id - 1).reduce((sum, xp) => sum + xp, 0);
+  for (let id = 3; id <= finalId; id++) {
+    const pass = LEVEL_PASSING_COUNTS[id - 1];
+    if (pass > 0) {
+      const exam = await service.loadLevel(id);
+      assert.equal(exam.questions.length, count(id));
+      assert.equal(exam.slides.length, 0);
+      assert.equal(exam.passingCorrectCount, pass);
+      assert.equal(exam.questions.filter((question) => question.reviewLevelIds?.length).length, count(id));
+      assert.deepEqual(await submit(id, pass - 1), { xpAwarded: 0, passed: false });
+      assert.equal((await state()).xp, xpBefore(id));
+      assert.equal((await state()).completedLevels.length, id - 1);
+      assert.deepEqual(await submit(id, pass), { xpAwarded: LEVEL_XP[id - 1], passed: true });
+      console.log(`PASS exam level ${id} fails at ${pass - 1}/${count(id)} and passes at ${pass}/${count(id)}.`);
+    } else await submit(id);
+  }
+  assert.equal((await state()).xp, xpBefore(finalId + 1));
   assert.equal((await state()).streakDays, 1);
-  assert.equal((await service.saveQuiz(account, 8, { correctCount: 15, totalQuestions: 15, attemptId: service.newAttemptId(user.uid) })).xpAwarded, 0);
-  console.log('PASS 15-question exam fails at 10, passes at 11, unlocks the badge once, and keeps the daily streak at 1.');
+  assert.equal((await submit(finalId)).xpAwarded, 0);
+  console.log(`PASS all ${finalId} levels complete with ${xpBefore(finalId + 1)} XP, the final badge is awarded once, and the daily streak stays at 1.`);
 
   await assert.rejects(updateDoc(doc(db, 'progress', user.uid), { xp: 9999, updatedAt: serverTimestamp() }), (error) => error.code === 'permission-denied');
   await assert.rejects(updateDoc(doc(db, 'levels', '1'), { title: 'forbidden' }), (error) => error.code === 'permission-denied');

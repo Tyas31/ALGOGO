@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ngulik/text';
 import { Colors, Radius, Spacing } from '@/constants/theme';
+import { withTap } from '@/lib/sounds';
 
 type LessonPopoverProps = {
   title: string;
@@ -48,7 +49,7 @@ export function LessonPopover({
       </Text>
       <Pressable
         accessibilityRole="button"
-        onPress={onAction}
+        onPress={withTap(onAction)}
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}>
         <Text variant="buttonSm" color="primaryDepth">
           {actionLabel.toUpperCase()}

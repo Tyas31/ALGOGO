@@ -1,6 +1,7 @@
 import { Image, Pressable, StyleSheet } from 'react-native';
 
 import { Sizes } from '@/constants/theme';
+import { withTap } from '@/lib/sounds';
 
 const starActiveImg = require('@/assets/ngulik/ikon/star-active.png');
 const starLockedImg = require('@/assets/ngulik/ikon/star-locked.png');
@@ -23,7 +24,7 @@ export function LevelNode({ status, onPress, label, size = Sizes.levelNode }: Le
       accessibilityLabel={
         label ?? (locked ? 'Pelajaran terkunci' : 'Pelajaran terbuka')
       }
-      onPress={onPress}
+      onPress={withTap(onPress)}
       style={({ pressed }) => [
         styles.pressable,
         { width: size, height: size },

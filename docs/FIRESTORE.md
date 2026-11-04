@@ -54,24 +54,47 @@ Dump SQL berisi tujuh tabel tanpa baris data. Struktur diadaptasi sebagai beriku
 Email hanya ada di profil privat. UID Firebase menggantikan nomor pengguna SQL.
 Nama tampilan tidak digunakan sebagai identitas unik akun.
 
+`follows/{pengikut}_{diikuti}` menyimpan satu hubungan ikuti (follower, followed, createdAt)
+untuk halaman Cari Teman. Hanya pengikut yang boleh membuat atau menghapusnya, tidak bisa
+mengikuti diri sendiri, dan yang diikuti harus sudah ada di `leaderboard`.
+
 Sumber materi adalah `Materi-Soal-Algogo.md`. `npm run curriculum:sync` menyusun
 `src/data/curriculum.ts` dan katalog ringan `src/data/level-catalog.ts` dari dokumen
-tersebut: 8 level, 35 slide, 50 soal, total 93 dokumen. Level 1–7 masing-masing
-memiliki 5 slide dan 5 soal; level 8 memiliki pembuka ujian dan 15 soal tanpa slide
-materi. `npm run firebase:export` mengekspor ulang ke
-`firebase/curriculum.json`. File ini adalah daftar path/data untuk proses seed;
-bukan format managed import/export Google Cloud. Data awal sudah diunggah ke proyek.
-Perubahan materi berikutnya harus dilakukan oleh pemilik melalui Firebase Console
-atau lingkungan server tepercaya. Klien aplikasi tidak diberi izin mengubah materi.
+tersebut: 6 unit, 33 level, 150 slide, 185 soal, total 368 dokumen. Unit 1–5 masing-masing
+berisi 6 level (5 slide dan 5 soal per level); Unit 6 berisi 3 ujian tanpa slide materi
+(10, 10, dan 15 soal). Script yang sama juga menulis tabel XP, jumlah soal, dan batas lulus
+ke `src/lib/progress-state.ts` dan ke blok `BEGIN GENERATED` di `firestore.rules`, jadi
+angka-angka itu tidak perlu diubah manual. `npm run firebase:export` mengekspor ulang ke
+`firebase/curriculum.json` untuk diperiksa. Klien aplikasi tidak diberi izin mengubah materi.
+
+### Mengunggah materi dan me-reset progres (khusus pemilik proyek)
+
+`npm run firebase:seed` memakai Firebase Admin SDK, sehingga hanya bisa dijalankan dengan
+kredensial pemilik/editor proyek. Buat service account key di Firebase Console > Project
+settings > Service accounts > Generate new private key, simpan **di luar folder repo**, lalu:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/ke/service-account.json
+npm run firebase:seed                                   # pratinjau, tidak menulis apa pun
+npm run firebase:seed -- --apply --reset-progress       # unggah materi + reset semua progres
+npx firebase-tools deploy --only firestore:rules --project algogo-af45b
+```
+
+Seed menulis semua level, materi, dan soal, lalu menghapus dokumen materi lama yang sudah
+tidak ada di dokumen. `--reset-progress` mengembalikan semua progres dan leaderboard ke
+0 XP; nama, akun, riwayat percobaan, dan data follow tetap ada. Jalankan seed **sebelum**
+deploy rules, lalu minta semua anggota tim pull dan memuat ulang aplikasi.
 
 ## Aturan perilaku
 
 - Profil, progres, dan entri peringkat awal dibuat bersama dalam transaksi.
 - Akun baru memiliki 0 XP dan 0 hari streak; hanya level 1 yang terbuka.
-- Menyelesaikan kuis level memberi 50 XP untuk level 1–7 dan 150 XP untuk level 8,
-  sekali per level. Maksimum dari kurikulum saat ini adalah 500 XP.
-- Ujian akhir baru selesai jika minimal 11 dari 15 soal benar. Nilai 0–10 tetap
-  dicatat sebagai percobaan, dengan 0 XP tambahan dan tanpa membuka lencana.
+- Menyelesaikan kuis level belajar memberi 50 XP (level 1–30), Ujian 1 dan Ujian 2
+  memberi 100 XP, dan Ujian Master memberi 150 XP, sekali per level. Maksimum dari
+  kurikulum saat ini adalah 1850 XP.
+- Ujian 1 dan Ujian 2 baru selesai jika minimal 7 dari 10 soal benar; Ujian Master
+  jika minimal 11 dari 15 soal benar. Nilai di bawahnya tetap dicatat sebagai percobaan,
+  dengan 0 XP tambahan, dan Ujian Master tidak membuka lencana.
   Layar hasil menyarankan level yang perlu diulas berdasarkan soal yang salah.
 - Kuis ulang disimpan sebagai percobaan baru dengan 0 XP tambahan. Mencoba ulang
   penyimpanan setelah gangguan koneksi memakai ID percobaan yang sama agar tidak ganda.
@@ -82,16 +105,17 @@ atau lingkungan server tepercaya. Klien aplikasi tidak diberi izin mengubah mate
 - Satu node visual mewakili tepat satu level dokumen. Menjawab satu soal belum
   menyelesaikan node. Menuntaskan seluruh kuis hanya menandai node itu selesai dan
   membuka satu node berikutnya. Kuis ulang tidak membuka node tambahan.
-- Delapan ID level yang sudah tersimpan tetap digunakan, sehingga progres akun
-  lama tidak direset saat jalur 43 node diganti dengan 8 node yang sesuai dokumen.
+- Saat kurikulum dipecah dari 8 menjadi 33 level, isi setiap nomor level berubah,
+  sehingga semua progres di-reset dengan `npm run firebase:seed -- --apply --reset-progress`.
 - Kolom tulis kode menerima beberapa baris. Pembanding mempertahankan teks literal
   dan struktur indentasi, serta menerima variasi nama variabel dan kutip yang
   diajarkan dokumen. Soal susun kode memakai indeks pilihan sehingga dua baris
   identik dapat dipilih masing-masing satu kali.
 - Reset mengosongkan progres dan peringkat setelah konfirmasi di aplikasi.
   Riwayat percobaan tetap ada.
-- Peringkat memakai total XP; pengguna dengan XP sama memiliki peringkat yang sama.
-  Halaman menampilkan sepuluh entri teratas dan peringkat pengguna saat ini.
+- Peringkat menampilkan semua pengguna terdaftar, diurutkan XP tertinggi. Jika XP sama,
+  yang lebih dulu mencapainya (updatedAt lebih awal) berada di atas, dan nomor peringkat
+  selalu berurutan.
 
 ## Keamanan dan pengelolaan
 
@@ -116,9 +140,8 @@ Untuk menerapkan perubahan aturan dari terminal dengan Firebase CLI yang sudah l
 npx firebase-tools deploy --only "firestore:rules,firestore:indexes" --project algogo-af45b
 ```
 
-Aturan XP dan progres saat ini mengikuti delapan level yang ada. Jika menambah level
-atau mengubah hadiah XP, perbarui `LEVEL_XP`, `LEVEL_QUESTION_COUNTS`, aturan Firestore,
-dan pengujiannya sebelum menyebarkan kurikulum baru. Firestore tidak menjalankan
+Jika menambah level atau mengubah hadiah XP, ubah `Materi-Soal-Algogo.md`, jalankan
+`npm run curriculum:sync` dan `npm test`, lalu seed materi dan deploy rules seperti di atas. Firestore tidak menjalankan
 foreign key atau ON DELETE CASCADE SQL; penghapusan akun harus mencakup data turunannya.
 
 ## Verifikasi
@@ -134,7 +157,7 @@ npx expo export --platform android --output-dir .expo/verify-android
 dan menguji pendaftaran serta login, lalu menjalankan regresi langsung ke Firebase memakai
 akun sementara, lalu membersihkan akun dan data milik akun uji itu. Pengujian
 mencakup pembukaan satu node, perbedaan soal per level, percobaan bersamaan,
-serta batas ujian 10/15 dan 11/15. Tidak mengubah progres pengguna lain.
+serta batas lulus setiap ujian. Tidak mengubah progres pengguna lain.
 
 Uji integrasi ke Firestore juga telah dijalankan dengan akun sementara: profil baru,
 pengambilan materi/soal, simpan dan ulang kuis, percobaan bersamaan, peringkat, reset,

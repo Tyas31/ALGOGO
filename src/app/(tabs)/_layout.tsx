@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtImage } from '@/components/ngulik/art-image';
 import { NavIcons } from '@/constants/assets';
 import { Colors, Radius, Sizes, Spacing } from '@/constants/theme';
+import { withTap } from '@/lib/sounds';
 
 const TAB_CONFIG = {
   index: {
@@ -60,7 +61,7 @@ export default function TabsLayout() {
                     accessibilityRole="tab"
                     accessibilityState={{ selected: isFocused }}
                     accessibilityLabel={config.label}
-                    onPress={onPress}
+                    onPress={withTap(onPress)}
                     style={({ pressed }) => [
                       styles.tabItem,
                       isFocused && styles.tabItemActive,

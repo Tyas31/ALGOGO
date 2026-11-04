@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View, type AccessibilityRole } from 'react-nativ
 
 import { Text } from '@/components/ngulik/text';
 import { Colors, Radius, Shadows, Sizes, Spacing } from '@/constants/theme';
+import { withTap } from '@/lib/sounds';
 
 type OptionShellProps = {
   label: string;
@@ -27,7 +28,7 @@ export function OptionShell({
       accessibilityRole={accessibilityRole}
       accessibilityState={{ checked, disabled }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={withTap(onPress)}
       style={({ pressed }) => [styles.option, pressed ? styles.pressed : styles.raised]}>
       {leading}
       <Text variant="label" color="onPrimary" style={styles.label}>

@@ -1,20 +1,27 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { ArtImage } from '@/components/ngulik/art-image';
 import { Button } from '@/components/ngulik/button';
+import { AddFriendIcon } from '@/components/ngulik/icons';
 import { ProfileHeader } from '@/components/ngulik/profile-header';
 import { StatSummary } from '@/components/ngulik/stat-summary';
 import { Text } from '@/components/ngulik/text';
-import { Mascots } from '@/constants/assets';
+import { Icons, Mascots, type Art } from '@/constants/assets';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { LEVEL_CATALOG } from '@/data/level-catalog';
 import { useAuth } from '@/hooks/use-auth';
+import { useFollows } from '@/hooks/use-follows';
 import { useProgress } from '@/hooks/use-progress';
 import { errorMessage } from '@/lib/errors';
+import { withTap } from '@/lib/sounds';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { streakDays, xp, rank, completedLevelTitles, completedLevels, resetProgress } =
     useProgress();
+  const { following, followers } = useFollows();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -47,14 +54,16 @@ export default function ProfileScreen() {
         name={user?.name ?? 'Sobat Algo'}
         handle={(user?.name ?? 'algo_learner').toLowerCase().replace(/\s+/g, '_')}
         joinedYear={user?.joinedYear ?? new Date().getFullYear()}
-        following={0}
-        followers={0}
+        following={following.length}
+        followers={followers.length}
         avatar={Mascots.head}
         onSettings={() => { setConfirmReset(false); setActionError(null); setShowSettingsModal(true); }}
       />
 
       {/* Konten Badan Profil */}
       <View style={styles.body}>
+        <Button label="Cari Teman" icon={<AddFriendIcon />} onPress={() => router.push('/friends')} />
+
         {/* Ringkasan Statistik */}
         <View style={styles.card}>
           <StatSummary
@@ -73,28 +82,28 @@ export default function ProfileScreen() {
 
           <View style={styles.badgeGrid}>
             <BadgeItem
-              emoji="🌱"
+              icon={Icons.steps}
               title="Pelangkah Pertama"
               desc="Masuk ke aplikasi"
               unlocked={true}
             />
             <BadgeItem
-              emoji="⭐"
+              icon={Icons.star}
               title="Langkah Awal"
               desc="Tuntaskan Level 1"
               unlocked={completedLevels.includes(1)}
             />
             <BadgeItem
-              emoji="🔥"
+              icon={Icons.streak}
               title="Streak Terus"
               desc="Capai 2 hari streak"
               unlocked={streakDays >= 2}
             />
             <BadgeItem
-              emoji="👑"
+              icon={Icons.rank}
               title="Master Algogo"
-              desc="Tuntaskan Ujian Akhir"
-              unlocked={completedLevels.includes(8)}
+              desc="Tuntaskan Ujian Master"
+              unlocked={completedLevels.includes(LEVEL_CATALOG.length)}
             />
           </View>
         </View>
@@ -128,7 +137,7 @@ export default function ProfileScreen() {
             {confirmReset && <Text>XP, streak, dan level selesai akan direset di akun ini. Riwayat latihan tetap tersimpan.</Text>}
             <View style={styles.modalButtons}>
               <Pressable
-                onPress={handleResetData}
+                onPress={withTap(handleResetData)}
                 disabled={busy}
                 style={({ pressed }) => [styles.resetBtn, pressed && styles.pressed]}>
                 <Text variant="label" color="danger">
@@ -137,7 +146,7 @@ export default function ProfileScreen() {
               </Pressable>
 
               <Pressable
-                onPress={() => setShowSettingsModal(false)}
+                onPress={withTap(() => setShowSettingsModal(false))}
                 style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}>
                 <Text variant="buttonSm" color="ink">
                   TUTUP
@@ -152,12 +161,12 @@ export default function ProfileScreen() {
 }
 
 function BadgeItem({
-  emoji,
+  icon,
   title,
   desc,
   unlocked,
 }: {
-  emoji: string;
+  icon: Art;
   title: string;
   desc: string;
   unlocked: boolean;
@@ -165,7 +174,7 @@ function BadgeItem({
   return (
     <View style={[styles.badgeCard, !unlocked && styles.badgeLocked]}>
       <View style={[styles.badgeIcon, !unlocked && styles.badgeIconLocked]}>
-        <Text style={styles.badgeEmoji}>{emoji}</Text>
+        <ArtImage art={icon} width={26} />
       </View>
       <Text variant="label" style={styles.badgeTitle}>
         {title}
@@ -226,9 +235,6 @@ const styles = StyleSheet.create({
   },
   badgeIconLocked: {
     backgroundColor: Colors.line,
-  },
-  badgeEmoji: {
-    fontSize: 22,
   },
   badgeTitle: {
     textAlign: 'center',
