@@ -176,6 +176,7 @@ export default function HomeScreen() {
                             description={node.subtitle}
                             actionLabel={status === 'completed' ? 'Ulas' : 'Mulai'}
                             onAction={() => handleStartLesson(node)}
+                            onClose={() => setSelectedNodeId(null)}
                           />
                         </View>
                       )}

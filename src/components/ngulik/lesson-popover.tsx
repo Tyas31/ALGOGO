@@ -1,3 +1,4 @@
+
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ngulik/text';
@@ -11,6 +12,7 @@ type LessonPopoverProps = {
   /** *MULAI* untuk pelajaran baru, *ULAS* untuk yang sudah selesai. */
   actionLabel: string;
   onAction: () => void;
+  onClose?: () => void;
   /** Posisi horizontal ujung panah dari kiri popover; default di tengah. */
   arrowLeft?: number;
 };
@@ -24,10 +26,23 @@ export function LessonPopover({
   description,
   actionLabel,
   onAction,
+  onClose,
   arrowLeft,
 }: LessonPopoverProps) {
   return (
     <View style={styles.root}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Tutup popup"
+        onPress={onClose}
+        style={({ pressed }) => [
+          styles.closeBtn,
+          pressed && styles.pressed,
+        ]}
+      >
+        <Text style={styles.closeText}>×</Text>
+      </Pressable>
+
       <View
         style={[
           styles.arrow,
@@ -69,6 +84,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.28)',
     zIndex: 10000,
+    position: 'relative',
   },
   arrow: {
     position: 'absolute',
@@ -87,6 +103,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: Spacing[2],
+    paddingRight: 30,
   },
   title: {
     flex: 1,
@@ -106,9 +123,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
   },
+  closeBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#E9DDFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  closeText: {
+    color: '#68418F',
+    fontSize: 20,
+    lineHeight: 22,
+    fontWeight: '600',
+  },
   pressed: {
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
 });
-
