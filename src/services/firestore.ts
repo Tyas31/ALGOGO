@@ -232,9 +232,10 @@ export async function saveQuiz(
 
   const commit = () => runTransaction(db, async (transaction) => {
     // Keep the attempt ID on retry, including when the first commit's response is lost.
-    const [progress, existingAttempt] = await Promise.all([
+    const [progress, existingAttempt, level] = await Promise.all([
       transaction.get(progressRef),
       transaction.get(attemptRef),
+      transaction.get(doc(db, 'levels', String(levelId))),
     ]);
 
     if (existingAttempt.exists()) {
@@ -245,7 +246,7 @@ export async function saveQuiz(
       };
     }
 
-    if (!progress.exists()) {
+    if (!progress.exists() || !level.exists()) {
       throw new Error('Progres belum siap. Coba lagi.');
     }
 
@@ -255,7 +256,8 @@ export async function saveQuiz(
       progress.data() as ProgressState,
       levelId,
       result,
-      now
+      now,
+      Number(level.data().questionCount)
     );
 
     if (
@@ -339,6 +341,7 @@ export async function resetProgress(user: AppUser) {
 }
 
 const levelCache = new Map<number, { level: LevelData; loadedAt: number }>();
+export function invalidateLevel(levelId: number) { levelCache.delete(levelId); }
 
 export async function loadLevel(levelId: number): Promise<LevelData> {
   const cached = levelCache.get(levelId);

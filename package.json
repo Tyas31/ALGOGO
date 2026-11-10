@@ -51,6 +51,8 @@
     "curriculum:sync": "node scripts/sync-curriculum.mjs",
     "test:firestore": "node scripts/firestore-smoke.mjs",
     "test:rules": "node scripts/firestore-rules-smoke.mjs",
+    "test:admin": "node scripts/admin-smoke.mjs",
+    "admin:grant": "node scripts/set-admin.mjs",
     "firebase:export": "node scripts/export-curriculum.mjs",
     "firebase:seed": "node scripts/seed-firestore.mjs"
   },

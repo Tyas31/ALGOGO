@@ -46,6 +46,9 @@ npm test
 [Panduan Firestore](docs/FIRESTORE.md) menjelaskan struktur data, pemetaan dump SQL,
 pengaturan Firebase, aturan XP/streak, batas penilaian di klien, dan pengelolaan aturan akses.
 
+[Panduan Admin](docs/ADMIN.md) menjelaskan penetapan role, penambahan soal, serta
+pembacaan nilai peserta melalui **Profil → Panel Admin**.
+
 - Konfigurasi aplikasi bersama: `.env` dan `src/lib/firebase.ts`; override opsional: `.env.local`.
 - Integrasi data: `src/services/firestore.ts`.
 - Aturan database: `firestore.rules`.

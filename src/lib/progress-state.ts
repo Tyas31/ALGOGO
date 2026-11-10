@@ -29,14 +29,14 @@ export function visibleStreak(state: ProgressState, now: Date = new Date()) {
     ? state.streakDays : 0;
 }
 
-export function finishLevel(state: ProgressState, levelId: number, score: QuizScore, now: Date = new Date()) {
+export function finishLevel(state: ProgressState, levelId: number, score: QuizScore, now: Date = new Date(), questionCount: number = LEVEL_QUESTION_COUNTS[levelId - 1]) {
   if (!Number.isInteger(levelId) || levelId < 1 || levelId > LEVEL_XP.length) {
     throw new Error('Level tidak ditemukan.');
   }
   if (levelId > 1 && !state.completedLevels.includes(levelId - 1)) {
     throw new Error('Selesaikan level sebelumnya terlebih dahulu.');
   }
-  if (score.totalQuestions !== LEVEL_QUESTION_COUNTS[levelId - 1] ||
+  if (!Number.isInteger(questionCount) || questionCount < 1 || score.totalQuestions !== questionCount ||
       !Number.isInteger(score.correctCount) || score.correctCount < 0 || score.correctCount > score.totalQuestions) {
     throw new Error('Hasil latihan tidak valid. Muat ulang materi lalu coba lagi.');
   }

@@ -13,14 +13,15 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
 import { curriculumDocuments } from './curriculum-documents.mjs';
 import { encodeBackupData } from './firestore-backup.mjs';
+import { preserveAdminQuestions } from './preserve-admin-questions.mjs';
 
 export async function seedCurriculum({ db, projectId, apply = false, resetProgress = false }) {
   if (db.projectId !== projectId) throw new Error('Firebase project does not match migration target.');
 
-  const { levels, documents } = await curriculumDocuments();
+  const { levels, documents: generatedDocuments } = await curriculumDocuments();
 
   // Collect stale curriculum documents: old levels, pages and questions no longer in the document.
-  const wanted = new Set(documents.map((document) => document.path));
+  const wanted = new Set(generatedDocuments.map((document) => document.path));
   const stale = [];
   const curriculumBefore = [];
   for (const level of (await db.collection('levels').get()).docs) {
@@ -28,11 +29,13 @@ export async function seedCurriculum({ db, projectId, apply = false, resetProgre
     for (const name of ['materials', 'questions']) {
       for (const child of (await level.ref.collection(name).get()).docs) {
         curriculumBefore.push(child);
-        if (!wanted.has(child.ref.path)) stale.push(child.ref);
+        const adminQuestion = name === 'questions' && child.data().source === 'admin' && wanted.has(level.ref.path);
+        if (!wanted.has(child.ref.path) && !adminQuestion) stale.push(child.ref);
       }
     }
     if (!wanted.has(level.ref.path)) stale.push(level.ref);
   }
+  const documents = preserveAdminQuestions(generatedDocuments, curriculumBefore.map((entry) => ({ path: entry.ref.path, data: entry.data() })));
 
   const progress = resetProgress ? (await db.collection('progress').get()).docs : [];
   const leaderboard = resetProgress ? (await db.collection('leaderboard').get()).docs : [];

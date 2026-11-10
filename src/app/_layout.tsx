@@ -68,7 +68,7 @@ function RootNavigator() {
 }
 
 function RootStack() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { loading, error, retry } = useProgress();
 
   const navigator = user && (loading || error) ? (
@@ -83,6 +83,9 @@ function RootStack() {
           <Stack.Screen name="lesson/[id]" />
           <Stack.Screen name="quiz/[id]" />
           <Stack.Screen name="friends" />
+          <Stack.Protected guard={isAdmin}>
+            <Stack.Screen name="admin" />
+          </Stack.Protected>
         </Stack.Protected>
       </Stack>
   );

@@ -18,7 +18,7 @@ import { errorMessage } from '@/lib/errors';
 import { withTap } from '@/lib/sounds';
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { streakDays, xp, rank, completedLevelTitles, completedLevels, resetProgress } =
     useProgress();
   const { following, followers } = useFollows();
@@ -63,6 +63,7 @@ export default function ProfileScreen() {
       {/* Konten Badan Profil */}
       <View style={styles.body}>
         <Button label="Cari Teman" icon={<AddFriendIcon />} onPress={() => router.push('/friends')} />
+        {isAdmin && <Button label="Panel Admin" onPress={() => router.push('/admin')} />}
 
         {/* Ringkasan Statistik */}
         <View style={styles.card}>

@@ -1,5 +1,5 @@
 import {
-  createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword,
+  createUserWithEmailAndPassword, onIdTokenChanged, signInWithEmailAndPassword,
   signOut as firebaseSignOut, updateProfile,
 } from 'firebase/auth';
 import { createContext, use, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -12,6 +12,7 @@ type AuthContextValue = {
   user: AppUser | null;
   initializing: boolean;
   configured: boolean;
+  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -22,14 +23,31 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [initializing, setInitializing] = useState(firebaseConfigured);
+  const [isAdmin, setIsAdmin] = useState(false);
   const registering = useRef(false);
 
   useEffect(() => {
     if (!firebaseConfigured) return;
-    return onAuthStateChanged(getFirebaseAuth(), (value) => {
-      if (!registering.current) setUser(value ? appUser(value) : null);
-      setInitializing(false);
+    let revision = 0;
+    let refreshedUid: string | null = null;
+    const stop = onIdTokenChanged(getFirebaseAuth(), async (value) => {
+      const current = ++revision;
+      try {
+        const refresh = !!value && refreshedUid !== value.uid;
+        refreshedUid = value?.uid ?? null;
+        const token = value ? await value.getIdTokenResult(refresh) : null;
+        if (current !== revision) return;
+        setIsAdmin(token?.claims.role === 'admin');
+        if (!registering.current) setUser(value ? appUser(value) : null);
+      } catch {
+        if (current !== revision) return;
+        setIsAdmin(false);
+        if (!registering.current) setUser(value ? appUser(value) : null);
+      } finally {
+        if (current === revision) setInitializing(false);
+      }
     });
+    return () => { revision++; stop(); };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -53,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext value={{
-      user, initializing, configured: firebaseConfigured, signIn, signUp,
+      user, initializing, isAdmin, configured: firebaseConfigured, signIn, signUp,
       signOut: () => firebaseSignOut(getFirebaseAuth()),
     }}>
       {children}
