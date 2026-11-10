@@ -17,7 +17,8 @@ service cloud.firestore {
     // Level selesai harus berurutan dari level 1 tanpa loncat: tepat n level pertama.
     function validLevels(levels) {
       return levels is list && levels.size() <= maxLevel() && levels.toSet().size() == levels.size()
-        && levels.hasOnly(levelIds()[0:levels.size()]);
+        // Firestore rejects an empty slice (0:0); a new account has no levels yet.
+        && (levels.size() == 0 || levels.hasOnly(levelIds()[0:levels.size()]));
     }
     function validProgress(data) {
       return data.keys().hasAll(['xp', 'streakDays', 'longestStreak', 'lastStudyDay', 'completedLevels', 'updatedAt'])

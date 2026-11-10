@@ -85,6 +85,21 @@ tidak ada di dokumen. `--reset-progress` mengembalikan semua progres dan leaderb
 0 XP; nama, akun, riwayat percobaan, dan data follow tetap ada. Jalankan seed **sebelum**
 deploy rules, lalu minta semua anggota tim pull dan memuat ulang aplikasi.
 
+Setiap penerapan `--apply` terlebih dahulu menyimpan cadangan lokal di
+`.expo/verification/upgrade-33/firestore-before-<waktu>.json`. Cadangan berisi dokumen
+kurikulum lama serta progres dan leaderboard yang akan direset. Timestamp disimpan
+dengan presisi nanodetik; gunakan `decodeBackupData` dari `scripts/firestore-backup.mjs`
+untuk membaca kembali nilainya sebagai tipe Firestore saat pemulihan oleh pengelola.
+Penulisan dibatalkan jika cadangan gagal atau menemukan tipe data yang tidak didukung.
+Reset memakai prasyarat `lastUpdateTime` agar perubahan pengguna setelah pencadangan
+tidak tertimpa diam-diam. Cadangan berada di folder yang diabaikan Git.
+
+Pada 10 November 2026, backend `algogo-af45b` telah diperbarui menjadi 33 level,
+150 halaman materi, dan 185 soal (368 dokumen kurikulum). Progres dan leaderboard
+7 akun lama dicadangkan, lalu direset atas persetujuan pemilik proyek. Aturan baru
+mendukung 33 level dan follow/unfollow. Validasi progres mengatasi daftar level kosong
+secara khusus, karena operasi slice `0:0` menghasilkan error indeks pada Rules runtime.
+
 ## Aturan perilaku
 
 - Profil, progres, dan entri peringkat awal dibuat bersama dalam transaksi.
@@ -153,11 +168,20 @@ npm test
 npx expo export --platform android --output-dir .expo/verify-android
 ```
 
+Dengan kredensial pengelola yang sama seperti seed, `npm run test:rules` menjalankan
+40 kasus pada Rules API tanpa memublikasikan aturan atau menulis dokumen. Kasusnya
+mencakup progres kosong, seluruh tahap 1–33, level yang dilompati/duplikat/tidak valid,
+dan XP palsu. Hasil terperinci disimpan di
+`.expo/verification/upgrade-33/rules-state-tests.json`.
+
 `npm run test:firestore` membaca `.env` bersama (dengan override `.env.local` opsional)
 dan menguji pendaftaran serta login, lalu menjalankan regresi langsung ke Firebase memakai
 akun sementara, lalu membersihkan akun dan data milik akun uji itu. Pengujian
 mencakup pembukaan satu node, perbedaan soal per level, percobaan bersamaan,
-serta batas lulus setiap ujian. Tidak mengubah progres pengguna lain.
+serta batas lulus setiap ujian. Dua akun uji juga memeriksa follow/unfollow secara
+realtime, penolakan mengikuti diri sendiri/pengguna tidak terdaftar, pemalsuan pengikut,
+penghapusan hubungan milik orang lain, dan akses progres privat antarakun.
+Tidak mengubah progres pengguna lain.
 
 Uji integrasi ke Firestore juga telah dijalankan dengan akun sementara: profil baru,
 pengambilan materi/soal, simpan dan ulang kuis, percobaan bersamaan, peringkat, reset,

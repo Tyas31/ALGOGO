@@ -50,6 +50,7 @@
     "test": "node --test scripts/*.test.mjs",
     "curriculum:sync": "node scripts/sync-curriculum.mjs",
     "test:firestore": "node scripts/firestore-smoke.mjs",
+    "test:rules": "node scripts/firestore-rules-smoke.mjs",
     "firebase:export": "node scripts/export-curriculum.mjs",
     "firebase:seed": "node scripts/seed-firestore.mjs"
   },
