@@ -1,4 +1,5 @@
 import type { QuestionData } from '@/data/curriculum';
+import { normalizedPython } from '@/lib/quiz-answers';
 
 export type QuestionDraft = Omit<QuestionData, 'id'>;
 
@@ -25,6 +26,11 @@ export function validateQuestionDraft(draft: QuestionDraft) {
     }
   } else if (draft.type === 'write') {
     if (!text(draft.correctAnswer)) throw new Error('Isi contoh kode jawaban yang benar.');
+    // Jawaban yang tidak bisa dibaca penilai otomatis membuat soal mustahil dijawab benar.
+    if ([draft.correctAnswer, ...(draft.acceptedAnswers ?? [])].some((code) => normalizedPython(code) === null)) {
+      throw new Error('Kode jawaban belum bisa dinilai otomatis. Periksa tanda kutip, kurung, dan indentasi, '
+        + 'serta hindari pemanggilan method seperti .upper().');
+    }
   } else throw new Error('Jenis soal tidak dikenal.');
   if (draft.acceptedAnswers && !list(draft.acceptedAnswers, 1, 12)) throw new Error('Variasi jawaban tidak valid.');
   if (draft.reviewLevelIds && (!Array.isArray(draft.reviewLevelIds) || draft.reviewLevelIds.length > 30 ||

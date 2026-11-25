@@ -13,6 +13,11 @@ test('admin question validation rejects incomplete keys and retains duplicate or
   const order = { ...valid, type: 'order', stepItems: ['print(a)', 'a = 1', 'print(a)'], correctOrder: ['a = 1', 'print(a)', 'print(a)'] };
   assert.equal(validateQuestionDraft(order), order);
   assert.throws(() => validateQuestionDraft({ ...order, correctOrder: ['a = 1', 'a = 1', 'print(a)'] }));
+  const write = { ...valid, type: 'write', options: undefined, correctAnswer: 'nama = input()\nprint("Halo", nama)' };
+  assert.equal(validateQuestionDraft(write), write);
+  // Kunci yang tidak bisa dinilai otomatis akan membuat soal mustahil dijawab benar.
+  assert.throws(() => validateQuestionDraft({ ...write, correctAnswer: 'print(nama.upper())' }), /dinilai otomatis/);
+  assert.throws(() => validateQuestionDraft({ ...write, correctAnswer: 'print("belum ditutup)' }), /dinilai otomatis/);
 });
 
 test('quiz completion uses the current server count after an admin adds a question', () => {
