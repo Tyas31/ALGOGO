@@ -9,7 +9,7 @@ Firebase Authentication, dan Cloud Firestore.
 npm ci
 ```
 
-Konfigurasi Firebase Web untuk proyek bersama `algogo-af45b` tersedia dalam `.env`
+Konfigurasi Firebase Web untuk proyek bersama `algogo-septriansyah` tersedia dalam `.env`
 yang ikut Git. Setelah clone atau pull, tidak perlu membuat `.env.local` atau
 meminta akses Firebase Console untuk mencoba login dan mendaftar.
 

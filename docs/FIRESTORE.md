@@ -1,6 +1,6 @@
 # Backend ALGOGO
 
-Proyek Firebase: `algogo-af45b`. Database `(default)` menggunakan Firestore Standard,
+Proyek Firebase: `algogo-septriansyah`. Database `(default)` menggunakan Firestore Standard,
 lokasi `asia-southeast2` (Jakarta), paket Spark. Aplikasi Web terdaftar sebagai
 `algogo-app`. Penyedia Authentication yang digunakan adalah Email/Password.
 
@@ -77,7 +77,7 @@ settings > Service accounts > Generate new private key, simpan **di luar folder 
 export GOOGLE_APPLICATION_CREDENTIALS=/path/ke/service-account.json
 npm run firebase:seed                                   # pratinjau, tidak menulis apa pun
 npm run firebase:seed -- --apply --reset-progress       # unggah materi + reset semua progres
-npx firebase-tools deploy --only firestore:rules --project algogo-af45b
+npx firebase-tools deploy --only firestore:rules --project algogo-septriansyah
 ```
 
 Seed menulis semua level, materi, dan soal, lalu menghapus dokumen materi lama yang sudah
@@ -94,11 +94,13 @@ Penulisan dibatalkan jika cadangan gagal atau menemukan tipe data yang tidak did
 Reset memakai prasyarat `lastUpdateTime` agar perubahan pengguna setelah pencadangan
 tidak tertimpa diam-diam. Cadangan berada di folder yang diabaikan Git.
 
-Pada 10 November 2026, backend `algogo-af45b` telah diperbarui menjadi 33 level,
-150 halaman materi, dan 185 soal (368 dokumen kurikulum). Progres dan leaderboard
-7 akun lama dicadangkan, lalu direset atas persetujuan pemilik proyek. Aturan baru
-mendukung 33 level dan follow/unfollow. Validasi progres mengatasi daftar level kosong
-secara khusus, karena operasi slice `0:0` menghasilkan error indeks pada Rules runtime.
+Pada 28 November 2026, backend dipindahkan dari proyek lama `algogo-af45b` ke proyek
+baru `algogo-septriansyah` milik pemilik repositori. Proyek baru diisi 33 level, 150
+halaman materi, dan 185 soal (368 dokumen kurikulum); Email/Password, Security Rules,
+dan indeks diterapkan dengan `firebase deploy --only auth,firestore`. Akun, progres, dan
+riwayat dari proyek lama tidak ikut pindah, sehingga pengguna perlu mendaftar ulang.
+Validasi progres mengatasi daftar level kosong secara khusus, karena operasi slice
+`0:0` menghasilkan error indeks pada Rules runtime.
 
 ## Aturan perilaku
 
@@ -152,7 +154,7 @@ key Admin SDK ke aplikasi atau ke variabel `EXPO_PUBLIC_*`.
 Untuk menerapkan perubahan aturan dari terminal dengan Firebase CLI yang sudah login:
 
 ```powershell
-npx firebase-tools deploy --only "firestore:rules,firestore:indexes" --project algogo-af45b
+npx firebase-tools deploy --only "firestore:rules,firestore:indexes" --project algogo-septriansyah
 ```
 
 Jika menambah level atau mengubah hadiah XP, ubah `Materi-Soal-Algogo.md`, jalankan

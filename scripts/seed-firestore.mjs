@@ -84,7 +84,7 @@ export async function seedCurriculum({ db, projectId, apply = false, resetProgre
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
-  const projectId = process.env.FIREBASE_PROJECT_ID || 'algogo-af45b';
+  const projectId = process.env.FIREBASE_PROJECT_ID || 'algogo-septriansyah';
   const app = initializeApp({ credential: applicationDefault(), projectId });
   try {
     await seedCurriculum({

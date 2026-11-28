@@ -1,0 +1,48 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCIlSfKor4dRxuFLN2kGJYLhWXFcO4YGfI",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "algogo-septriansyah.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "algogo-septriansyah",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "algogo-septriansyah.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "522032400525",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:522032400525:web:9b4e2bd5cc5a6db624fac4"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCIlSfKor4dRxuFLN2kGJYLhWXFcO4YGfI",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "algogo-septriansyah.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "algogo-septriansyah",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "algogo-septriansyah.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "522032400525",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:522032400525:web:9b4e2bd5cc5a6db624fac4"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCIlSfKor4dRxuFLN2kGJYLhWXFcO4YGfI",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "algogo-septriansyah.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "algogo-septriansyah",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "algogo-septriansyah.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "522032400525",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:522032400525:web:9b4e2bd5cc5a6db624fac4"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

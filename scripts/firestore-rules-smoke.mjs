@@ -61,7 +61,7 @@ export async function testProgressRules({ projectId, credential }) {
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   await testProgressRules({
-    projectId: process.env.FIREBASE_PROJECT_ID || 'algogo-af45b',
+    projectId: process.env.FIREBASE_PROJECT_ID || 'algogo-septriansyah',
     credential: applicationDefault(),
   });
 }

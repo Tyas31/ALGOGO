@@ -21,7 +21,7 @@ export async function grantAdmin({ app, email, apply = false }) {
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const email = process.argv[process.argv.indexOf('--email') + 1];
   if (!process.argv.includes('--email') || !email?.includes('@')) throw new Error('Gunakan --email akun-yang-sudah-terdaftar.');
-  const app = initializeApp({ credential: applicationDefault(), projectId: process.env.FIREBASE_PROJECT_ID || 'algogo-af45b' });
+  const app = initializeApp({ credential: applicationDefault(), projectId: process.env.FIREBASE_PROJECT_ID || 'algogo-septriansyah' });
   try { console.log(JSON.stringify(await grantAdmin({ app, email, apply: process.argv.includes('--apply') }))); }
   finally { await deleteApp(app); }
 }
